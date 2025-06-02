@@ -16,7 +16,7 @@ func ConcertExists(key string) (int64, error) {
 
 func AddSeatToConcert(concertID int64, seats *models.Seat) error {
 	seatID := strconv.FormatInt(seats.SeatID, 10)
-	key := fmt.Sprintf("concert:id:%d:seat", concertID)
+	key := fmt.Sprintf("concert:id:%d:seat:%s", concertID, seats.SeatSection)
 	key = GetRedisKey(key)
 	_, err := rdb.SAdd(key, seatID).Result()
 	if err != nil {
@@ -35,8 +35,8 @@ func AddConcertToRedis(concertId int64) error {
 	return nil
 }
 
-func GetSeatByConcertID(concertID int64) (int64, error) {
-	key := fmt.Sprintf("concert:id:%d:seat", concertID)
+func GetSeatByConcertID(p *models.Ticket) (int64, error) {
+	key := fmt.Sprintf("concert:id:%d:seat:%s", p.ConcertID, p.SeatIdx.SeatSection)
 	key = GetRedisKey(key)
 	seatIDStr, err := rdb.SPop(key).Result()
 	if err != nil {
