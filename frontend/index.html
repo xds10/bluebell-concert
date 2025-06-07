@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>演唱会票务系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+        <nav class="navbar">
+            <div class="logo">演唱会票务系统</div>
+            <div class="nav-links">
+                <a href="#" class="active" data-page="home">首页</a>
+                <a href="#" data-page="concerts">演唱会列表</a>
+                <div class="user-section">
+                    <a href="#" data-page="login" id="loginBtn">登录</a>
+                    <a href="#" data-page="register" id="registerBtn">注册</a>
+                    <a href="#" id="logoutBtn" style="display: none;">退出</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主要内容区域 -->
+        <main>
+            <!-- 登录表单 -->
+            <div class="form-container" id="loginForm" style="display: none;">
+                <h2>用户登录</h2>
+                <form id="login">
+                    <div class="form-group">
+                        <label for="loginUsername">用户名</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">密码</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit">登录</button>
+                </form>
+            </div>
+
+            <!-- 注册表单 -->
+            <div class="form-container" id="registerForm" style="display: none;">
+                <h2>用户注册</h2>
+                <form id="register">
+                    <div class="form-group">
+                        <label for="registerUsername">用户名</label>
+                        <input type="text" id="registerUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">密码</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <button type="submit">注册</button>
+                </form>
+            </div>
+
+            <!-- 演唱会列表 -->
+            <div class="concert-list" id="concertList">
+                <h2>演唱会列表</h2>
+                <div class="concerts-grid" id="concertsGrid"></div>
+            </div>
+
+            <!-- 演唱会详情 -->
+            <div class="concert-detail" id="concertDetail" style="display: none;">
+                <h2>演唱会详情</h2>
+                <div class="detail-content">
+                    <div class="concert-info"></div>
+                    <div class="seat-selection">
+                        <h3>选择座位</h3>
+                        <div class="seat-map"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/concert.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

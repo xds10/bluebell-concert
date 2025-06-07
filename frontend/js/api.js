@@ -1,0 +1,94 @@
+// API 基础配置
+const API_BASE_URL = 'http://localhost:8081/api/v1';
+
+// API 请求工具函数
+async function apiRequest(endpoint, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers
+    };
+
+    console.log(`Making request to: ${API_BASE_URL}${endpoint}`);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers,
+            credentials: 'include'
+        });
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Response data:', data);
+        return data;
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
+}
+
+// 用户认证相关 API
+const authAPI = {
+    login: async (username, password) => {
+        return apiRequest('/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+    },
+
+    register: async (username, password) => {
+        return apiRequest('/signup', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+    }
+};
+
+// 演唱会相关 API
+const concertAPI = {
+    getList: async () => {
+        return apiRequest('/concert-list', {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
+    },
+
+    getDetail: async (id) => {
+        return apiRequest(`/concert/${id}`);
+    },
+
+    create: async (concertData) => {
+        return apiRequest('/create_concert', {
+            method: 'POST',
+            body: JSON.stringify(concertData)
+        });
+    },
+
+    buyTicket: async (concertId, seatSection) => {
+        return apiRequest('/buy', {
+            method: 'POST',
+            body: JSON.stringify({
+                concert_id: concertId,
+                seat_idx: {
+                    section: seatSection
+                }
+            })
+        });
+    },
+
+    payOrder: async (orderData) => {
+        return apiRequest('/pay', {
+            method: 'POST',
+            body: JSON.stringify(orderData)
+        });
+    }
+}; 
