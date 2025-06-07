@@ -1,0 +1,1 @@
+wrk -t4 -c10 -d10s -s ./wrk/buy_test.lua http://localhost:8081
