@@ -125,8 +125,31 @@ const concertManager = {
         try {
             const response = await concertAPI.buyTicket(concertId, section);
             if (response.code === 1000) {
-                alert('选座成功！请在5分钟内完成支付。');
-                // 这里应该跳转到支付页面
+                // 选座成功后显示支付按钮
+                const seatMap = document.querySelector('.seat-map');
+                seatMap.innerHTML = `<div style="padding: 32px; text-align: center; color: #333; font-size: 20px;">选座成功！请在5分钟内完成支付。<br><button id='payBtn' style='margin-top:20px;padding:10px 30px;font-size:18px;background:#43a047;color:#fff;border:none;border-radius:4px;cursor:pointer;'>立即支付</button></div>`;
+                document.getElementById('payBtn').onclick = async () => {
+                    // 假装支付，调用payOrder接口
+                    const orderData = {
+                        id: response.data.id,
+                        user_id: response.data.user_id,
+                        concert_id: response.data.concert_id,
+                        seat_id: response.data.seat_idx.id,
+                        price: response.data.seat_idx.price,
+                        status: 0,
+                        create_time: new Date().toISOString()
+                    };
+                    try {
+                        const payResp = await concertAPI.payOrder(orderData);
+                        if (payResp.code === 1000) {
+                            seatMap.innerHTML = '<div style="padding: 32px; text-align: center; color: #43a047; font-size: 22px;">支付成功！</div>';
+                        } else {
+                            seatMap.innerHTML = '<div style="padding: 32px; text-align: center; color: #e53935; font-size: 22px;">支付失败：' + (payResp.msg || '未知错误') + '</div>';
+                        }
+                    } catch (e) {
+                        seatMap.innerHTML = '<div style="padding: 32px; text-align: center; color: #e53935; font-size: 22px;">支付异常，请稍后重试</div>';
+                    }
+                };
             } else {
                 alert('选座失败：' + (response.msg || '未知错误'));
             }
