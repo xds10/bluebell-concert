@@ -20,13 +20,21 @@ const auth = {
     async login(username, password) {
         try {
             const response = await authAPI.login(username, password);
-            this.token = response.data.token;
-            this.isAuthenticated = true;
-            localStorage.setItem('token', this.token);
-            // 兼容后续API统一读取loginResult
-            localStorage.setItem('loginResult', JSON.stringify({ token: this.token }));
-            this.updateUI();
-            return true;
+            // 兼容后端返回结构
+            if (response.code === 1000 && response.data && response.data.token) {
+                this.token = response.data.token;
+                this.isAuthenticated = true;
+                localStorage.setItem('token', this.token);
+                localStorage.setItem('loginResult', JSON.stringify({
+                    token: this.token,
+                    user_id: response.data.user_id,
+                    user_name: response.data.user_name
+                }));
+                this.updateUI && this.updateUI();
+                return true;
+            } else {
+                return false;
+            }
         } catch (error) {
             console.error('Login failed:', error);
             return false;
@@ -59,15 +67,15 @@ const auth = {
         const registerForm = document.getElementById('registerForm');
 
         if (this.isAuthenticated) {
-            loginBtn.style.display = 'none';
-            registerBtn.style.display = 'none';
-            logoutBtn.style.display = 'inline';
-            loginForm.style.display = 'none';
-            registerForm.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (registerBtn) registerBtn.style.display = 'none';
+            if (logoutBtn) logoutBtn.style.display = 'inline';
+            if (loginForm) loginForm.style.display = 'none';
+            if (registerForm) registerForm.style.display = 'none';
         } else {
-            loginBtn.style.display = 'inline';
-            registerBtn.style.display = 'inline';
-            logoutBtn.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = 'inline';
+            if (registerBtn) registerBtn.style.display = 'inline';
+            if (logoutBtn) logoutBtn.style.display = 'none';
         }
     }
 };

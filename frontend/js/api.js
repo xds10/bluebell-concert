@@ -21,10 +21,6 @@ async function apiRequest(endpoint, options = {}) {
 
         console.log('Response status:', response.status);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
         console.log('Response data:', data);
         return data;

@@ -63,3 +63,12 @@ func PayTicket(p *models.Order) error {
 	}
 	return nil
 }
+
+func OrderList(user *models.User) (data []*models.Order, err error) {
+	orders, err := mysql.GetOrderList(user.UserID)
+	if err != nil {
+		zap.L().Error("mysql.GetOrderList failed", zap.Error(err))
+		return nil, err
+	}
+	return orders, nil
+}

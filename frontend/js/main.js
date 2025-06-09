@@ -4,8 +4,21 @@ const navigation = {
         const navLinks = document.querySelectorAll('.nav-links a[data-page]');
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
-                e.preventDefault();
                 const page = e.target.dataset.page;
+                if (page === 'login') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                if (page === 'register') {
+                    window.location.href = 'register.html';
+                    return;
+                }
+                if (page === 'orders') {
+                    window.location.href = 'orders.html';
+                    return;
+                }
+                // 其它页面按原逻辑
+                e.preventDefault();
                 this.navigateTo(page);
             });
         });

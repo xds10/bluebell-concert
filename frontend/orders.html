@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的订单</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; }
+        .order-container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px; }
+        .order-item { border-bottom: 1px solid #eee; padding: 12px 0; }
+        .order-item:last-child { border-bottom: none; }
+        .order-link { color: #1976d2; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="order-container">
+        <h2>我的订单</h2>
+        <div id="ordersContent">加载中...</div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        async function loadOrders() {
+            const ordersContent = document.getElementById('ordersContent');
+            if (!auth.isAuthenticated) {
+                ordersContent.innerHTML = '请先登录以查看订单';
+                return;
+            }
+            try {
+                const userId = localStorage.getItem('loginResult') ? JSON.parse(localStorage.getItem('loginResult')).user_id : null;
+                if (!userId) {
+                    ordersContent.innerHTML = '用户信息缺失';
+                    return;
+                }
+                // 按后端接口，POST /api/v1/order-list，body: { user_id }
+                const resp = await apiRequest('/order-list', {
+                    method: 'POST',
+                    body: JSON.stringify({ user_id: userId })
+                });
+                if (resp.code === 1000 && Array.isArray(resp.data) && resp.data.length > 0) {
+                    ordersContent.innerHTML = resp.data.map(order => `
+                        <div class="order-item">
+                            <b>订单号：</b><span class="order-link" onclick="viewOrder(${order.id})">${order.id}</span>
+                            &nbsp; <b>演唱会ID：</b>${order.concert_id}
+                            &nbsp; <b>座位ID：</b>${order.seat_id}
+                            &nbsp; <b>价格：</b>￥${order.price}
+                            &nbsp; <b>状态：</b>${order.status === 1 ? '待支付' : order.status === 2 ? '已支付' : '其他'}
+                        </div>
+                    `).join('');
+                } else {
+                    ordersContent.innerHTML = '暂无订单';
+                }
+            } catch (e) {
+                ordersContent.innerHTML = '加载订单失败';
+            }
+        }
+        function viewOrder(orderId) {
+            // 跳转到订单详情页
+            window.location.href = `order_detail.html?order_id=${orderId}`;
+        }
+        document.addEventListener('DOMContentLoaded', loadOrders);
+    </script>
+</body>
+</html> 

@@ -41,6 +41,7 @@ func Setup(mode string) *gin.Engine {
 		v1.GET("/concert/:id", controller.GetConcertDetailHandler)
 		v1.POST("/buy", controller.BuyTicketHandler)
 		v1.POST("/pay", controller.PayOrderHandler)
+		v1.POST("/order-list", controller.OrderListHandler)
 	}
 
 	v1.GET("/ping", middlewares.JWTAuthMiddleware(), func(c *gin.Context) {

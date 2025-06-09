@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>演唱会详情</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; }
+        .detail-container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px; }
+        .concert-info { margin-bottom: 32px; }
+        .seat-selection { background: #fafbfc; border-radius: 8px; padding: 24px; }
+        .section-btn { margin: 8px; padding: 16px 32px; font-size: 18px; background: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="detail-container">
+        <h2>演唱会详情</h2>
+        <div class="concert-info" id="concertInfo">加载中...</div>
+        <div class="seat-selection">
+            <h3>选择座位</h3>
+            <div class="seat-map" id="seatMap"></div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        async function loadConcertDetail() {
+            const params = new URLSearchParams(window.location.search);
+            const concertId = params.get('concert_id');
+            const concertInfoDiv = document.getElementById('concertInfo');
+            const seatMapDiv = document.getElementById('seatMap');
+            if (!concertId) {
+                concertInfoDiv.innerHTML = '未指定演唱会ID';
+                seatMapDiv.innerHTML = '';
+                return;
+            }
+            try {
+                const resp = await apiRequest(`/concert/${concertId}`);
+                if (resp.code === 1000 && resp.data) {
+                    const c = resp.data;
+                    concertInfoDiv.innerHTML = `
+                        <div><b>${c.title}</b></div>
+                        <div>开始时间：${new Date(c.date).toLocaleString()}</div>
+                        <div>结束时间：${new Date(c.enddate).toLocaleString()}</div>
+                        <div>开售时间：${new Date(c.saletime).toLocaleString()}</div>
+                        <div>状态：${c.status === 0 ? '未开始售票' : c.status === 1 ? '售票中' : '已结束'}</div>
+                    `;
+                    // 判断售票时间
+                    const now = new Date();
+                    const saleTime = new Date(c.saletime);
+                    const endDate = new Date(c.enddate);
+                    if (!isNaN(saleTime.getTime()) && !isNaN(endDate.getTime()) && now >= saleTime && now < endDate) {
+                        showSeatSelection(concertId);
+                    } else {
+                        seatMapDiv.innerHTML = '<div style="padding: 32px; text-align: center; color: #888; font-size: 20px;">未开始售票</div>';
+                    }
+                } else {
+                    concertInfoDiv.innerHTML = '未找到演唱会信息';
+                    seatMapDiv.innerHTML = '';
+                }
+            } catch (e) {
+                concertInfoDiv.innerHTML = '加载失败';
+                seatMapDiv.innerHTML = '';
+            }
+        }
+        function showSeatSelection(concertId) {
+            const seatMapDiv = document.getElementById('seatMap');
+            seatMapDiv.innerHTML = '';
+            const sections = ['VIP区', 'A区', 'B区', 'C区'];
+            sections.forEach(section => {
+                const btn = document.createElement('button');
+                btn.className = 'section-btn';
+                btn.textContent = section;
+                btn.onclick = () => selectSeat(concertId, section);
+                seatMapDiv.appendChild(btn);
+            });
+        }
+        async function selectSeat(concertId, section) {
+            if (!auth.isAuthenticated) {
+                alert('请先登录');
+                return;
+            }
+            try {
+                const response = await apiRequest('/buy', {
+                    method: 'POST',
+                    body: JSON.stringify({ concert_id: concertId, seat_idx: { section } })
+                });
+                if (response.code === 1000) {
+                    // 选座成功后跳转到支付页面
+                    const orderData = {
+                        id: response.data.id,
+                        user_id: response.data.user_id,
+                        concert_id: response.data.concert_id,
+                        seat_id: response.data.seat_idx.id,
+                        price: response.data.seat_idx.price,
+                        status: 0,
+                        create_time: new Date().toISOString()
+                    };
+                    localStorage.setItem('currentOrder', JSON.stringify(orderData));
+                    window.location.href = '/payment.html';
+                } else {
+                    alert('选座失败：' + (response.msg || '未知错误'));
+                }
+            } catch (error) {
+                alert('选座失败，请稍后重试');
+            }
+        }
+        document.addEventListener('DOMContentLoaded', loadConcertDetail);
+    </script>
+</body>
+</html> 

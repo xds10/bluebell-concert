@@ -27,3 +27,13 @@ func GetOrderById(id int64) *models.Order {
 	}
 	return order
 }
+
+func GetOrderList(userID int64) ([]*models.Order, error) {
+	sqlStr := `select id,user_id,concert_id,seat_id,price,status,create_time from orders where user_id = ?`
+	orders := []*models.Order{}
+	err := db.Select(&orders, sqlStr, userID)
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
+}

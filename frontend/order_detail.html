@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>订单详情</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; }
+        .detail-container { max-width: 500px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px; }
+        .info { margin: 16px 0; color: #333; }
+        .concert-link { color: #1976d2; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="detail-container">
+        <h2>订单详情</h2>
+        <div class="info" id="orderInfo">加载中...</div>
+        <div class="info" id="concertInfo"></div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        async function loadOrderDetail() {
+            const params = new URLSearchParams(window.location.search);
+            const orderId = params.get('order_id');
+            const orderInfoDiv = document.getElementById('orderInfo');
+            const concertInfoDiv = document.getElementById('concertInfo');
+            if (!orderId) {
+                orderInfoDiv.innerHTML = '未指定订单号';
+                return;
+            }
+            // 假设有API: /api/v1/order/:id 获取订单详情
+            try {
+                const resp = await apiRequest(`/order/${orderId}`);
+                if (resp.code === 1000 && resp.data) {
+                    const order = resp.data;
+                    orderInfoDiv.innerHTML = `
+                        <div>订单号：${order.id}</div>
+                        <div>演唱会ID：<span class="concert-link" onclick="viewConcert(${order.concert_id})">${order.concert_id}</span></div>
+                        <div>座位ID：${order.seat_id}</div>
+                        <div>价格：￥${order.price}</div>
+                        <div>状态：${order.status === 1 ? '待支付' : order.status === 2 ? '已支付' : '其他'}</div>
+                        <div>下单时间：${order.create_time}</div>
+                    `;
+                    // 获取演唱会详情
+                    const concertResp = await apiRequest(`/concert/${order.concert_id}`);
+                    if (concertResp.code === 1000 && concertResp.data) {
+                        const c = concertResp.data;
+                        concertInfoDiv.innerHTML = `
+                            <hr>
+                            <h3>演唱会信息</h3>
+                            <div>名称：${c.title}</div>
+                            <div>场馆ID：${c.venue_id}</div>
+                            <div>开始时间：${c.date}</div>
+                            <div>结束时间：${c.enddate}</div>
+                            <div>开售时间：${c.saletime}</div>
+                        `;
+                    }
+                } else {
+                    orderInfoDiv.innerHTML = '未找到订单信息';
+                }
+            } catch (e) {
+                orderInfoDiv.innerHTML = '加载失败';
+            }
+        }
+        function viewConcert(concertId) {
+            window.location.href = `concert_detail.html?concert_id=${concertId}`;
+        }
+        document.addEventListener('DOMContentLoaded', loadOrderDetail);
+    </script>
+</body>
+</html> 
