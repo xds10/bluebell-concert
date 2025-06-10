@@ -10,4 +10,5 @@ type Order struct {
 	Price      float64   `json:"price" db:"price"`
 	Status     int       `json:"status" db:"status"`
 	CreateTime time.Time `json:"create_time" db:"create_time"`
+	Ticket     *Ticket   `json:"ticket" db:"ticket"`
 }

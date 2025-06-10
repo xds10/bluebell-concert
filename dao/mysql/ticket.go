@@ -9,3 +9,13 @@ func BuyTicket(p *models.Ticket) error {
 	_, err := db.Exec(sqlStr, p.ConcertID, p.SeatIdx.SeatID)
 	return err
 }
+func GetTicketByOrderID(orderID int64) (*models.Ticket, error) {
+	sqlStr := `select id,place_id,place,section,seat_row,seat_no from seat where id=?`
+	ticket := &models.Ticket{}
+	ticket.SeatIdx = &models.Seat{}
+	err := db.Get(ticket.SeatIdx, sqlStr, orderID)
+	if err != nil {
+		return nil, err
+	}
+	return ticket, nil
+}

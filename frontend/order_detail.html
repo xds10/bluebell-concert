@@ -14,6 +14,7 @@
     <div class="detail-container">
         <h2>订单详情</h2>
         <div class="info" id="orderInfo">加载中...</div>
+        <button id="payBtn" style="display:none;margin-top:16px;">立即支付</button>
         <div class="info" id="concertInfo"></div>
     </div>
     <script src="js/api.js"></script>
@@ -30,17 +31,40 @@
             }
             // 假设有API: /api/v1/order/:id 获取订单详情
             try {
-                const resp = await apiRequest(`/order/${orderId}`);
+                const resp = await apiRequest(`/order/${orderId}`, {
+                    method: 'POST'
+                });
                 if (resp.code === 1000 && resp.data) {
                     const order = resp.data;
+                    // 展示座位详细信息
+                    let seatInfo = '';
+                    if (order.ticket && order.ticket.seat_idx) {
+                        seatInfo = `
+                            <div>座位分区：${order.ticket.seat_idx.section}</div>
+                            <div>座位行：${order.ticket.seat_idx.seat_row}</div>
+                            <div>座位列：${order.ticket.seat_idx.seat_no}</div>
+                        `;
+                    }
                     orderInfoDiv.innerHTML = `
                         <div>订单号：${order.id}</div>
                         <div>演唱会ID：<span class="concert-link" onclick="viewConcert(${order.concert_id})">${order.concert_id}</span></div>
                         <div>座位ID：${order.seat_id}</div>
+                        ${seatInfo}
                         <div>价格：￥${order.price}</div>
                         <div>状态：${order.status === 1 ? '待支付' : order.status === 2 ? '已支付' : '其他'}</div>
                         <div>下单时间：${order.create_time}</div>
                     `;
+                    // 显示支付按钮（仅待支付状态）
+                    const payBtn = document.getElementById('payBtn');
+                    if (order.status === 1) {
+                        payBtn.style.display = 'inline-block';
+                        payBtn.onclick = function() {
+                            localStorage.setItem('currentOrder', JSON.stringify(order));
+                            window.location.href = 'payment.html';
+                        };
+                    } else {
+                        payBtn.style.display = 'none';
+                    }
                     // 获取演唱会详情
                     const concertResp = await apiRequest(`/concert/${order.concert_id}`);
                     if (concertResp.code === 1000 && concertResp.data) {

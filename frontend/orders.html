@@ -19,6 +19,8 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
+        // 先初始化认证状态
+        auth.init();
         async function loadOrders() {
             const ordersContent = document.getElementById('ordersContent');
             if (!auth.isAuthenticated) {

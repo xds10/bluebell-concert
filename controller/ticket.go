@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"bluebell/dao/mysql"
 	"bluebell/logic"
@@ -105,4 +106,21 @@ func OrderListHandler(c *gin.Context) {
 	}
 	// 3. 返回响应
 	ResponseSuccess(c, orders)
+}
+
+func GetOrderDetailHandler(c *gin.Context) {
+	// 1. 获取参数和参数校验
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		ResponseError(c, CodeInvalidParam)
+		return
+	}
+	order, err := logic.GetOrderDetail(id)
+	if err != nil {
+		zap.L().Error("logic.GetOrderDetail failed", zap.Error(err))
+		ResponseError(c, CodeServerBusy)
+		return
+	}
+	ResponseSuccess(c, order)
 }

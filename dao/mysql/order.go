@@ -18,14 +18,14 @@ func PayOrder(id int64) error {
 	return err
 }
 
-func GetOrderById(id int64) *models.Order {
+func GetOrderById(id int64) (*models.Order, error) {
 	sqlStr := `select id,user_id,concert_id,seat_id,price,status,create_time from orders where id =?`
 	order := &models.Order{}
 	err := db.Get(order, sqlStr, id)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return order
+	return order, nil
 }
 
 func GetOrderList(userID int64) ([]*models.Order, error) {

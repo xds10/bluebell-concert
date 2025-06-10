@@ -51,12 +51,12 @@ func BuyTicket(p *models.Ticket) (*models.Ticket, error) {
 }
 
 func PayTicket(p *models.Order) error {
-	order := mysql.GetOrderById(p.ID)
+	order, err := mysql.GetOrderById(p.ID)
 	if (time.Now().Sub(order.CreateTime)).Minutes() > 5 {
 		zap.L().Error("订单超时")
 		return fmt.Errorf("订单超时")
 	}
-	err := mysql.PayOrder(p.ID)
+	err = mysql.PayOrder(p.ID)
 	if err != nil {
 		zap.L().Error("mysql.PayTicket failed", zap.Error(err))
 		return err
@@ -71,4 +71,22 @@ func OrderList(user *models.User) (data []*models.Order, err error) {
 		return nil, err
 	}
 	return orders, nil
+}
+
+func GetOrderDetail(p int) (*models.Order, error) {
+	order, err := mysql.GetOrderById(int64(p))
+	if order == nil {
+		return nil, fmt.Errorf("订单不存在")
+	}
+	order.Ticket = &models.Ticket{
+		TicketID:  order.ID,
+		ConcertID: order.ConcertID,
+		UserID:    order.UserID,
+	}
+	order.Ticket, err = mysql.GetTicketByOrderID(order.SeatID)
+	if err != nil {
+		zap.L().Error("mysql.GetTicketByOrderID failed", zap.Error(err))
+		return nil, err
+	}
+	return order, nil
 }

@@ -39,8 +39,11 @@
             this.innerText = '支付中...';
             // 这里可以调用真实支付接口
             setTimeout(() => {
-                document.getElementById('payResult').innerHTML = '<div style="color:#43a047;font-size:20px;margin-top:20px;">支付成功！</div>';
+                document.getElementById('payResult').innerHTML = '<div style="color:#43a047;font-size:20px;margin-top:20px;">支付成功！<br>即将返回上一页...</div>';
                 this.style.display = 'none';
+                setTimeout(() => {
+                    window.history.back();
+                }, 1500);
             }, 1200);
         }
     </script>
