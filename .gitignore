@@ -1,2 +1,4 @@
+<< EOL
 *.log
-web_app.log
+web_app*.log
+EOL
