@@ -149,13 +149,38 @@
                         const concertResponse = await apiRequest(`/concert/${order.concert_id}`);
                         if (concertResponse.code === 1000 && concertResponse.data) {
                             const concert = concertResponse.data;
+                            
+                            // 计算演唱会状态
+                            const now = new Date();
+                            const saleTime = new Date(concert.saletime);
+                            const startDate = new Date(concert.date);
+                            const endDate = new Date(concert.enddate);
+                            
+                            console.log('当前时间:', now);
+                            console.log('开售时间:', saleTime);
+                            console.log('开始时间:', startDate);
+                            console.log('结束时间:', endDate);
+                            
+                            let statusText = '未知状态';
+                            
+                            // 判断实际状态
+                            if (now < saleTime) {
+                                statusText = '未开始售票';
+                            } else if (now >= saleTime && now < startDate) {
+                                statusText = '售票中';
+                            } else if (now >= startDate && now < endDate) {
+                                statusText = '演出中';
+                            } else {
+                                statusText = '已结束';
+                            }
+                            
                             concertInfoDiv.innerHTML = `
                                 <h3>演唱会详情</h3>
                                 <div><b>${concert.title}</b></div>
                                 <div>开始时间：${new Date(concert.date).toLocaleString()}</div>
                                 <div>结束时间：${new Date(concert.enddate).toLocaleString()}</div>
                                 <div>开售时间：${new Date(concert.saletime).toLocaleString()}</div>
-                                <div>状态：${concert.status === 0 ? '未开始售票' : concert.status === 1 ? '售票中' : '已结束'}</div>
+                                <div>状态：${statusText}</div>
                             `;
                         }
                     }
