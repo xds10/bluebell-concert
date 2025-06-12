@@ -27,6 +27,24 @@
         #payBtn:hover { 
             background-color: #2e7d32; 
         }
+        #cancelBtn { 
+            padding: 10px 20px; 
+            background-color: #f44336; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            transition: background-color 0.3s;
+            margin-left: 10px;
+        }
+        #cancelBtn:hover { 
+            background-color: #d32f2f; 
+        }
+        .button-group {
+            margin-top: 16px;
+            display: flex;
+        }
     </style>
 </head>
 <body>
@@ -46,7 +64,10 @@
     <div class="detail-container">
         <h2>订单详情</h2>
         <div class="order-info" id="orderInfo">加载中...</div>
-        <button id="payBtn" style="display:none;margin-top:16px;">立即支付</button>
+        <div class="button-group">
+            <button id="payBtn" style="display:none;">立即支付</button>
+            <button id="cancelBtn" style="display:none;">取消订单</button>
+        </div>
         <div class="concert-info" id="concertInfo"></div>
     </div>
     <script src="js/api.js"></script>
@@ -58,6 +79,7 @@
             const orderInfoDiv = document.getElementById('orderInfo');
             const concertInfoDiv = document.getElementById('concertInfo');
             const payBtn = document.getElementById('payBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
             
             if (!orderId) {
                 orderInfoDiv.innerHTML = '未指定订单ID';
@@ -89,17 +111,37 @@
                         <div>创建时间：${new Date(order.create_time).toLocaleString()}</div>
                     `;
                     
-                    // 如果订单状态为未支付，显示支付按钮
+                    // 如果订单状态为未支付，显示支付按钮和取消按钮
                     if (order.status === 1) {
                         payBtn.style.display = 'block';
+                        cancelBtn.style.display = 'block';
+                        
                         payBtn.onclick = function() {
                             // 保存订单信息到本地存储，以便支付页面使用
                             localStorage.setItem('currentOrder', JSON.stringify(order));
                             // 跳转到支付页面
                             window.location.href = `payment.html?order_id=${order.id}`;
                         };
+                        
+                        cancelBtn.onclick = async function() {
+                            if (confirm('确定要取消此订单吗？')) {
+                                try {
+                                    const cancelResponse = await orderAPI.cancelOrder(order.id);
+                                    if (cancelResponse.code === 1000) {
+                                        alert('订单已取消');
+                                        window.location.reload(); // 刷新页面
+                                    } else {
+                                        alert('取消订单失败：' + (cancelResponse.msg || '未知错误'));
+                                    }
+                                } catch (error) {
+                                    alert('取消订单失败，请稍后重试');
+                                    console.error('取消订单错误:', error);
+                                }
+                            }
+                        };
                     } else {
                         payBtn.style.display = 'none';
+                        cancelBtn.style.display = 'none';
                     }
                     
                     // 获取演唱会详情

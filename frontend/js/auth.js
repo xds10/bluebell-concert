@@ -89,53 +89,67 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logoutBtn');
 
     // 登录表单提交
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = document.getElementById('loginUsername').value;
-        const password = document.getElementById('loginPassword').value;
-        
-        if (await auth.login(username, password)) {
-            document.getElementById('loginForm').style.display = 'none';
-            window.location.reload();
-        } else {
-            alert('登录失败，请检查用户名和密码');
-        }
-    });
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (await auth.login(username, password)) {
+                document.getElementById('loginForm').style.display = 'none';
+                window.location.reload();
+            } else {
+                alert('登录失败，请检查用户名和密码');
+            }
+        });
+    }
 
     // 注册表单提交
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = document.getElementById('registerUsername').value;
-        const password = document.getElementById('registerPassword').value;
-        
-        if (await auth.register(username, password)) {
-            document.getElementById('registerForm').style.display = 'none';
-            window.location.reload();
-        } else {
-            alert('注册失败，请稍后重试');
-        }
-    });
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            if (await auth.register(username, password)) {
+                document.getElementById('registerForm').style.display = 'none';
+                window.location.reload();
+            } else {
+                alert('注册失败，请稍后重试');
+            }
+        });
+    }
 
     // 登录按钮点击
-    loginBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('registerForm').style.display = 'none';
-    });
+    if (loginBtn) {
+        loginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            if (loginForm) loginForm.style.display = 'block';
+            if (registerForm) registerForm.style.display = 'none';
+        });
+    }
 
     // 注册按钮点击
-    registerBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('registerForm').style.display = 'block';
-        document.getElementById('loginForm').style.display = 'none';
-    });
+    if (registerBtn) {
+        registerBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            if (registerForm) registerForm.style.display = 'block';
+            if (loginForm) loginForm.style.display = 'none';
+        });
+    }
 
     // 退出按钮点击
-    logoutBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        auth.logout();
-        window.location.reload();
-    });
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            auth.logout();
+            window.location.reload();
+        });
+    }
 
     // 初始化认证状态
     auth.init();

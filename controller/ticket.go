@@ -124,3 +124,32 @@ func GetOrderDetailHandler(c *gin.Context) {
 	}
 	ResponseSuccess(c, order)
 }
+
+// 添加取消订单的处理函数
+func CancelOrderHandler(c *gin.Context) {
+	// 1. 获取参数和参数校验
+	p := new(models.Order)
+	if err := c.ShouldBindJSON(p); err != nil {
+		// 请求参数有误
+		zap.L().Error("cancelOrder with invalid error", zap.Error(err))
+		// 判断err是不是validator
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			ResponseError(c, CodeInvalidParam)
+			return
+		}
+		ResponseErrorWithMsg(c, CodeInvalidParam, errs.Translate(trans)) // 翻译
+		return
+	}
+	
+	// 2. 业务处理
+	err := logic.CancelOrder(p.ID)
+	if err != nil {
+		zap.L().Error("logic.CancelOrder failed", zap.Error(err))
+		ResponseErrorWithMsg(c, CodeServerBusy, err.Error())
+		return
+	}
+	
+	// 3. 返回响应
+	ResponseSuccess(c, nil)
+}

@@ -115,5 +115,14 @@ const orderAPI = {
                 price: price
             })
         });
+    },
+    
+    cancelOrder: async (orderId) => {
+        return apiRequest('/cancel-order', {
+            method: 'POST',
+            body: JSON.stringify({
+                id: orderId
+            })
+        });
     }
 }; 

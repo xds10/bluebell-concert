@@ -13,6 +13,41 @@
         .concert-info { margin-bottom: 32px; }
         .seat-selection { background: #fafbfc; border-radius: 8px; padding: 24px; }
         .section-btn { margin: 8px; padding: 16px 32px; font-size: 18px; background: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        /* 验证码样式 */
+        .captcha-container { margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; text-align: center; }
+        .captcha-code { font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333; text-shadow: 1px 1px 2px #ccc; }
+        .captcha-input { margin: 15px 0; padding: 10px; width: 150px; font-size: 16px; text-align: center; }
+        .refresh-btn { background: none; border: none; color: #1976d2; cursor: pointer; font-size: 14px; margin-left: 10px; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 9999; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); 
+        }
+        .modal-content { 
+            background-color: #fff; 
+            margin: 15% auto; 
+            padding: 20px; 
+            width: 300px; 
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .close-btn { 
+            color: #aaa; 
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .close-btn:hover { color: #000; }
     </style>
 </head>
 <body>
@@ -37,9 +72,64 @@
             <div class="seat-map" id="seatMap"></div>
         </div>
     </div>
+
+    <!-- 验证码弹窗 -->
+    <div id="captchaModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeCaptcha">&times;</span>
+            <h3>请输入验证码</h3>
+            <div class="captcha-container">
+                <div class="captcha-code" id="captchaCode"></div>
+                <button class="refresh-btn" id="refreshCaptcha">刷新验证码</button>
+                <input type="text" class="captcha-input" id="captchaInput" placeholder="请输入验证码">
+            </div>
+            <button id="submitCaptcha" style="margin-top: 15px;">确认购票</button>
+        </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
+        // 存储当前选择的信息
+        let currentSelection = {
+            concertId: null,
+            section: null
+        };
+
+        // 生成随机验证码
+        function generateCaptcha() {
+            const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+            let captcha = '';
+            for (let i = 0; i < 6; i++) {
+                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('captchaCode').textContent = captcha;
+            return captcha;
+        }
+
+        // 显示验证码弹窗
+        function showCaptchaModal(concertId, section) {
+            console.log('显示验证码弹窗', concertId, section);
+            currentSelection.concertId = concertId;
+            currentSelection.section = section;
+            
+            // 生成验证码
+            const captcha = generateCaptcha();
+            currentSelection.captcha = captcha;
+            
+            // 显示弹窗
+            const modal = document.getElementById('captchaModal');
+            console.log('验证码弹窗元素:', modal);
+            modal.style.display = 'block';
+            document.getElementById('captchaInput').value = '';
+            document.getElementById('captchaInput').focus();
+        }
+
+        // 关闭验证码弹窗
+        function closeCaptchaModal() {
+            document.getElementById('captchaModal').style.display = 'none';
+        }
+
         async function loadConcertDetail() {
             const params = new URLSearchParams(window.location.search);
             const concertId = params.get('concert_id');
@@ -54,31 +144,62 @@
                 const resp = await apiRequest(`/concert/${concertId}`);
                 if (resp.code === 1000 && resp.data) {
                     const c = resp.data;
+                    console.log('演唱会数据:', c); // 调试输出
+                    
+                    // 计算演唱会状态
+                    const now = new Date();
+                    const saleTime = new Date(c.saletime);
+                    const startDate = new Date(c.date);
+                    const endDate = new Date(c.enddate);
+                    
+                    console.log('当前时间:', now);
+                    console.log('开售时间:', saleTime);
+                    console.log('开始时间:', startDate);
+                    console.log('结束时间:', endDate);
+                    
+                    let statusText = '未知状态';
+                    let canSelectSeat = false;
+                    
+                    // 判断实际状态
+                    if (now < saleTime) {
+                        statusText = '未开始售票';
+                    } else if (now >= saleTime && now < startDate) {
+                        statusText = '售票中';
+                        canSelectSeat = true;
+                    } else if (now >= startDate && now < endDate) {
+                        statusText = '演出中';
+                    } else {
+                        statusText = '已结束';
+                    }
+                    
+                    console.log('计算的状态:', statusText);
+                    console.log('是否可以选座:', canSelectSeat);
+                    
                     concertInfoDiv.innerHTML = `
                         <div><b>${c.title}</b></div>
                         <div>开始时间：${new Date(c.date).toLocaleString()}</div>
                         <div>结束时间：${new Date(c.enddate).toLocaleString()}</div>
                         <div>开售时间：${new Date(c.saletime).toLocaleString()}</div>
-                        <div>状态：${c.status === 0 ? '未开始售票' : c.status === 1 ? '售票中' : '已结束'}</div>
+                        <div>状态：${statusText}</div>
                     `;
-                    // 判断售票时间
-                    const now = new Date();
-                    const saleTime = new Date(c.saletime);
-                    const endDate = new Date(c.enddate);
-                    if (!isNaN(saleTime.getTime()) && !isNaN(endDate.getTime()) && now >= saleTime && now < endDate) {
+                    
+                    // 根据实际计算的状态决定是否显示座位选择
+                    if (canSelectSeat) {
                         showSeatSelection(concertId);
                     } else {
-                        seatMapDiv.innerHTML = '<div style="padding: 32px; text-align: center; color: #888; font-size: 20px;">未开始售票</div>';
+                        seatMapDiv.innerHTML = '<div style="padding: 32px; text-align: center; color: #888; font-size: 20px;">' + statusText + '</div>';
                     }
                 } else {
                     concertInfoDiv.innerHTML = '未找到演唱会信息';
                     seatMapDiv.innerHTML = '';
                 }
             } catch (e) {
+                console.error('加载演唱会详情错误:', e);
                 concertInfoDiv.innerHTML = '加载失败';
                 seatMapDiv.innerHTML = '';
             }
         }
+
         function showSeatSelection(concertId) {
             const seatMapDiv = document.getElementById('seatMap');
             seatMapDiv.innerHTML = '';
@@ -87,15 +208,20 @@
                 const btn = document.createElement('button');
                 btn.className = 'section-btn';
                 btn.textContent = section;
-                btn.onclick = () => selectSeat(concertId, section);
+                btn.onclick = () => {
+                    console.log('点击座位按钮:', section);
+                    if (!auth.isAuthenticated) {
+                        alert('请先登录');
+                        return;
+                    }
+                    console.log('准备显示验证码弹窗');
+                    showCaptchaModal(concertId, section);
+                };
                 seatMapDiv.appendChild(btn);
             });
         }
+
         async function selectSeat(concertId, section) {
-            if (!auth.isAuthenticated) {
-                alert('请先登录');
-                return;
-            }
             try {
                 const response = await apiRequest('/buy', {
                     method: 'POST',
@@ -121,9 +247,34 @@
                 alert('选座失败，请稍后重试');
             }
         }
+
         document.addEventListener('DOMContentLoaded', () => {
             auth.init();
             loadConcertDetail();
+
+            // 验证码相关事件
+            document.getElementById('closeCaptcha').addEventListener('click', closeCaptchaModal);
+            document.getElementById('refreshCaptcha').addEventListener('click', () => {
+                currentSelection.captcha = generateCaptcha();
+            });
+            document.getElementById('submitCaptcha').addEventListener('click', () => {
+                const userInput = document.getElementById('captchaInput').value.trim();
+                if (userInput === currentSelection.captcha) {
+                    closeCaptchaModal();
+                    selectSeat(currentSelection.concertId, currentSelection.section);
+                } else {
+                    alert('验证码错误，请重新输入');
+                    document.getElementById('captchaInput').value = '';
+                    document.getElementById('captchaInput').focus();
+                }
+            });
+
+            // 按Enter键提交验证码
+            document.getElementById('captchaInput').addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('submitCaptcha').click();
+                }
+            });
         });
     </script>
 </body>

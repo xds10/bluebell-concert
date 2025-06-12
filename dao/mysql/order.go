@@ -1,6 +1,10 @@
 package mysql
 
-import "bluebell/models"
+import (
+	"time"
+	
+	"bluebell/models"
+)
 
 func AddOrder(order *models.Order) error {
 	sqlStr := `insert into orders (user_id,concert_id,seat_id,price,status,create_time) values (?,?,?,?,?,?)`
@@ -18,6 +22,18 @@ func PayOrder(id int64) error {
 	return err
 }
 
+func CancelOrder(id int64) error {
+	sqlStr := `update orders set status = ? where id = ?`
+	_, err := db.Exec(sqlStr, 4, id)
+	return err
+}
+
+func ExpireOrder(id int64) error {
+	sqlStr := `update orders set status = ? where id = ?`
+	_, err := db.Exec(sqlStr, 3, id)
+	return err
+}
+
 func GetOrderById(id int64) (*models.Order, error) {
 	sqlStr := `select id,user_id,concert_id,seat_id,price,status,create_time from orders where id =?`
 	order := &models.Order{}
@@ -32,6 +48,19 @@ func GetOrderList(userID int64) ([]*models.Order, error) {
 	sqlStr := `select id,user_id,concert_id,seat_id,price,status,create_time from orders where user_id = ?`
 	orders := []*models.Order{}
 	err := db.Select(&orders, sqlStr, userID)
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
+}
+
+// 获取所有未支付且创建时间超过5分钟的订单
+func GetExpiredOrders() ([]*models.Order, error) {
+	sqlStr := `select id,user_id,concert_id,seat_id,price,status,create_time from orders 
+               where status = 1 and create_time < ?`
+	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
+	orders := []*models.Order{}
+	err := db.Select(&orders, sqlStr, fiveMinutesAgo)
 	if err != nil {
 		return nil, err
 	}

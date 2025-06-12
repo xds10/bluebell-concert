@@ -12,15 +12,25 @@ import (
 )
 
 func Ticker(control chan string, done chan bool) {
-	ticker := time.NewTicker(2 * time.Hour)
-	defer ticker.Stop()
-	executeTask()
+	// 创建两个定时器，一个用于演唱会排班检查（2小时），一个用于订单过期检查（1分钟）
+	concertTicker := time.NewTicker(2 * time.Hour)
+	orderTicker := time.NewTicker(1 * time.Minute)
+	
+	defer concertTicker.Stop()
+	defer orderTicker.Stop()
+	
+	// 初始执行一次任务
+	executeConcertTask()
+	executeOrderExpirationTask()
 
 	for {
 		select {
-		case <-ticker.C:
-			// 每2小时触发一次任务
-			executeTask()
+		case <-concertTicker.C:
+			// 每2小时触发一次演唱会排班任务
+			executeConcertTask()
+		case <-orderTicker.C:
+			// 每1分钟触发一次订单过期检查
+			executeOrderExpirationTask()
 		case cmd := <-control:
 			// 处理控制命令
 			switch cmd {
@@ -30,16 +40,24 @@ func Ticker(control chan string, done chan bool) {
 				return
 			case "reset":
 				fmt.Println("收到重置命令，重新启动定时器")
-				ticker.Stop()
-				ticker = time.NewTicker(2 * time.Hour)
+				concertTicker.Stop()
+				orderTicker.Stop()
+				concertTicker = time.NewTicker(2 * time.Hour)
+				orderTicker = time.NewTicker(1 * time.Minute)
 			}
 		}
 	}
 }
 
-func executeTask() {
-	// 执行任务的逻辑
-	fmt.Println("执行任务...")
+// 执行订单过期检查任务
+func executeOrderExpirationTask() {
+	zap.L().Info("执行订单过期检查任务...")
+	CheckExpiredOrders()
+}
+
+// 执行演唱会排班任务
+func executeConcertTask() {
+	zap.L().Info("执行演唱会排班任务...")
 	// 读取未来1个月的演唱会排班
 	concerts, err := mysql.GetFutureConcerts()
 	if err != nil {
@@ -90,6 +108,6 @@ func executeTask() {
 			zap.L().Error("将座位信息导入到redis的set中失败", zap.Error(err))
 			return
 		}
-
 	}
 }
+
