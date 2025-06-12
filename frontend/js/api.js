@@ -87,4 +87,33 @@ const concertAPI = {
             body: JSON.stringify(orderData)
         });
     }
+};
+
+// 订单相关 API
+const orderAPI = {
+    getOrderList: async (userId) => {
+        return apiRequest('/order-list', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId })
+        });
+    },
+
+    getOrderDetail: async (orderId) => {
+        return apiRequest(`/order/${orderId}`, {
+            method: 'POST'
+        });
+    },
+
+    payOrder: async (orderId, userId, concertId, seatId, price) => {
+        return apiRequest('/pay', {
+            method: 'POST',
+            body: JSON.stringify({
+                id: orderId,
+                user_id: userId,
+                concert_id: concertId,
+                seat_id: seatId,
+                price: price
+            })
+        });
+    }
 }; 

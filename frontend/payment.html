@@ -5,19 +5,43 @@
     <title>支付页面</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f7f7f7; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #1976d2; color: white; }
+        .logo { font-size: 20px; font-weight: bold; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: white; text-decoration: none; }
         .pay-container { max-width: 400px; margin: 80px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #ccc; padding: 32px; text-align: center; }
         .pay-btn { margin-top: 24px; padding: 12px 40px; font-size: 18px; background: #43a047; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
         .info { margin: 16px 0; color: #333; }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="logo">演唱会票务系统</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="index.html">演唱会列表</a>
+            <a href="orders.html">我的订单</a>
+            <div class="user-section">
+                <a href="#" id="loginBtn">登录</a>
+                <a href="#" id="registerBtn">注册</a>
+                <a href="#" id="logoutBtn" style="display: none;">退出</a>
+            </div>
+        </div>
+    </nav>
     <div class="pay-container">
         <h2>订单支付</h2>
         <div class="info" id="orderInfo"></div>
         <button class="pay-btn" id="payBtn">立即支付</button>
         <div id="payResult"></div>
     </div>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script>
+        // 初始化认证
+        document.addEventListener('DOMContentLoaded', () => {
+            auth.init();
+        });
+
         // 读取订单信息
         const order = JSON.parse(localStorage.getItem('currentOrder') || '{}');
         const infoDiv = document.getElementById('orderInfo');
@@ -27,24 +51,61 @@
                 <div>演唱会ID：${order.concert_id}</div>
                 <div>座位ID：${order.seat_id}</div>
                 <div>价格：<b style="color:#e53935;">￥${order.price}</b></div>
+                <div>状态：${getOrderStatusText(order.status || 1)}</div>
             `;
         } else {
             infoDiv.innerHTML = '<span style="color:#e53935;">未找到订单信息</span>';
             document.getElementById('payBtn').style.display = 'none';
         }
 
+        // 获取订单状态文本
+        function getOrderStatusText(status) {
+            switch (status) {
+                case 1: return "未支付";
+                case 2: return "已支付";
+                case 3: return "已过期";
+                case 4: return "已取消";
+                default: return "未知状态";
+            }
+        }
+
         // 假装支付
         document.getElementById('payBtn').onclick = async function() {
             this.disabled = true;
             this.innerText = '支付中...';
-            // 这里可以调用真实支付接口
-            setTimeout(() => {
-                document.getElementById('payResult').innerHTML = '<div style="color:#43a047;font-size:20px;margin-top:20px;">支付成功！<br>即将返回上一页...</div>';
-                this.style.display = 'none';
-                setTimeout(() => {
-                    window.history.back();
-                }, 1500);
-            }, 1200);
+            
+            try {
+                // 调用真实支付API
+                const result = await orderAPI.payOrder(
+                    order.id,
+                    order.user_id,
+                    order.concert_id,
+                    order.seat_id,
+                    order.price
+                );
+                
+                if (result && result.code === 1000) {
+                    document.getElementById('payResult').innerHTML = '<div style="color:#43a047;font-size:20px;margin-top:20px;">支付成功！<br>即将返回订单页面...</div>';
+                    this.style.display = 'none';
+                    
+                    // 更新本地订单状态
+                    order.status = 2; // 已支付
+                    localStorage.setItem('currentOrder', JSON.stringify(order));
+                    
+                    setTimeout(() => {
+                        window.location.href = `order_detail.html?order_id=${order.id}`;
+                    }, 1500);
+                } else {
+                    document.getElementById('payResult').innerHTML = '<div style="color:#e53935;font-size:16px;margin-top:20px;">支付失败：' + (result.msg || '未知错误') + '</div>';
+                    this.disabled = false;
+                    this.innerText = '重新支付';
+                }
+            } catch (error) {
+                console.error('支付失败:', error);
+                document.getElementById('payResult').innerHTML = '<div style="color:#e53935;font-size:16px;margin-top:20px;">支付失败，请稍后重试</div>';
+                this.disabled = false;
+                this.innerText = '重新支付';
+            }
         }
     </script>
 </body>

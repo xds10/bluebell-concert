@@ -5,6 +5,10 @@
     <title>演唱会详情</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f7f7f7; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #1976d2; color: white; }
+        .logo { font-size: 20px; font-weight: bold; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: white; text-decoration: none; }
         .detail-container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px; }
         .concert-info { margin-bottom: 32px; }
         .seat-selection { background: #fafbfc; border-radius: 8px; padding: 24px; }
@@ -12,6 +16,19 @@
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="logo">演唱会票务系统</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="index.html">演唱会列表</a>
+            <a href="orders.html">我的订单</a>
+            <div class="user-section">
+                <a href="#" id="loginBtn">登录</a>
+                <a href="#" id="registerBtn">注册</a>
+                <a href="#" id="logoutBtn" style="display: none;">退出</a>
+            </div>
+        </div>
+    </nav>
     <div class="detail-container">
         <h2>演唱会详情</h2>
         <div class="concert-info" id="concertInfo">加载中...</div>
@@ -82,10 +99,10 @@
             try {
                 const response = await apiRequest('/buy', {
                     method: 'POST',
-                    body: JSON.stringify({ concert_id: concertId, seat_idx: { section } })
+                    body: JSON.stringify({ concert_id: parseInt(concertId), seat_idx: { section } })
                 });
                 if (response.code === 1000) {
-                    // 选座成功后跳转到支付页面
+                    // 选座成功后跳转到订单详情页
                     const orderData = {
                         id: response.data.id,
                         user_id: response.data.user_id,
@@ -96,7 +113,7 @@
                         create_time: new Date().toISOString()
                     };
                     localStorage.setItem('currentOrder', JSON.stringify(orderData));
-                    window.location.href = '/payment.html';
+                    window.location.href = `order_detail.html?order_id=${response.data.id}`;
                 } else {
                     alert('选座失败：' + (response.msg || '未知错误'));
                 }
@@ -104,7 +121,10 @@
                 alert('选座失败，请稍后重试');
             }
         }
-        document.addEventListener('DOMContentLoaded', loadConcertDetail);
+        document.addEventListener('DOMContentLoaded', () => {
+            auth.init();
+            loadConcertDetail();
+        });
     </script>
 </body>
 </html> 

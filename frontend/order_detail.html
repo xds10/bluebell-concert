@@ -5,17 +5,49 @@
     <title>订单详情</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f7f7f7; }
-        .detail-container { max-width: 500px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #1976d2; color: white; }
+        .logo { font-size: 20px; font-weight: bold; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: white; text-decoration: none; }
+        .detail-container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px; }
+        .order-info { margin-bottom: 32px; }
+        .concert-info { margin-top: 32px; padding-top: 32px; border-top: 1px solid #eee; }
         .info { margin: 16px 0; color: #333; }
         .concert-link { color: #1976d2; cursor: pointer; text-decoration: underline; }
+        #payBtn { 
+            padding: 10px 20px; 
+            background-color: #43a047; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            transition: background-color 0.3s;
+        }
+        #payBtn:hover { 
+            background-color: #2e7d32; 
+        }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="logo">演唱会票务系统</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="index.html">演唱会列表</a>
+            <a href="orders.html">我的订单</a>
+            <div class="user-section">
+                <a href="#" id="loginBtn">登录</a>
+                <a href="#" id="registerBtn">注册</a>
+                <a href="#" id="logoutBtn" style="display: none;">退出</a>
+            </div>
+        </div>
+    </nav>
     <div class="detail-container">
         <h2>订单详情</h2>
-        <div class="info" id="orderInfo">加载中...</div>
+        <div class="order-info" id="orderInfo">加载中...</div>
         <button id="payBtn" style="display:none;margin-top:16px;">立即支付</button>
-        <div class="info" id="concertInfo"></div>
+        <div class="concert-info" id="concertInfo"></div>
     </div>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
@@ -25,71 +57,91 @@
             const orderId = params.get('order_id');
             const orderInfoDiv = document.getElementById('orderInfo');
             const concertInfoDiv = document.getElementById('concertInfo');
+            const payBtn = document.getElementById('payBtn');
+            
             if (!orderId) {
-                orderInfoDiv.innerHTML = '未指定订单号';
+                orderInfoDiv.innerHTML = '未指定订单ID';
                 return;
             }
-            // 假设有API: /api/v1/order/:id 获取订单详情
             try {
-                const resp = await apiRequest(`/order/${orderId}`, {
-                    method: 'POST'
-                });
-                if (resp.code === 1000 && resp.data) {
-                    const order = resp.data;
-                    // 展示座位详细信息
-                    let seatInfo = '';
+                const response = await orderAPI.getOrderDetail(orderId);
+                console.log('订单详情数据:', response.data); // 调试输出
+                if (response.code === 1000 && response.data) {
+                    const order = response.data;
+                    // 获取座位信息
+                    let seatInfo = '未知';
                     if (order.ticket && order.ticket.seat_idx) {
-                        seatInfo = `
-                            <div>座位分区：${order.ticket.seat_idx.section}</div>
-                            <div>座位行：${order.ticket.seat_idx.seat_row}</div>
-                            <div>座位列：${order.ticket.seat_idx.seat_no}</div>
-                        `;
+                        const seat = order.ticket.seat_idx;
+                        seatInfo = `${seat.section || '未知区域'}`;
+                        if (seat.seat_row) seatInfo += ` ${seat.seat_row}排`;
+                        if (seat.seat_no) seatInfo += ` ${seat.seat_no}号`;
+                    } else if (order.seat_section) {
+                        // 兼容旧数据结构
+                        seatInfo = order.seat_section;
                     }
+                    
                     orderInfoDiv.innerHTML = `
-                        <div>订单号：${order.id}</div>
-                        <div>演唱会ID：<span class="concert-link" onclick="viewConcert(${order.concert_id})">${order.concert_id}</span></div>
-                        <div>座位ID：${order.seat_id}</div>
-                        ${seatInfo}
-                        <div>价格：￥${order.price}</div>
-                        <div>状态：${order.status === 1 ? '待支付' : order.status === 2 ? '已支付' : '其他'}</div>
-                        <div>下单时间：${order.create_time}</div>
+                        <div><b>订单号：${order.id}</b></div>
+                        <div>演唱会：${order.concert_title || '未知'}</div>
+                        <div>座位：${seatInfo}</div>
+                        <div>价格：${order.price || '未知'}</div>
+                        <div>状态：${getOrderStatusText(order.status)}</div>
+                        <div>创建时间：${new Date(order.create_time).toLocaleString()}</div>
                     `;
-                    // 显示支付按钮（仅待支付状态）
-                    const payBtn = document.getElementById('payBtn');
+                    
+                    // 如果订单状态为未支付，显示支付按钮
                     if (order.status === 1) {
-                        payBtn.style.display = 'inline-block';
+                        payBtn.style.display = 'block';
                         payBtn.onclick = function() {
+                            // 保存订单信息到本地存储，以便支付页面使用
                             localStorage.setItem('currentOrder', JSON.stringify(order));
-                            window.location.href = 'payment.html';
+                            // 跳转到支付页面
+                            window.location.href = `payment.html?order_id=${order.id}`;
                         };
                     } else {
                         payBtn.style.display = 'none';
                     }
+                    
                     // 获取演唱会详情
-                    const concertResp = await apiRequest(`/concert/${order.concert_id}`);
-                    if (concertResp.code === 1000 && concertResp.data) {
-                        const c = concertResp.data;
-                        concertInfoDiv.innerHTML = `
-                            <hr>
-                            <h3>演唱会信息</h3>
-                            <div>名称：${c.title}</div>
-                            <div>场馆ID：${c.venue_id}</div>
-                            <div>开始时间：${c.date}</div>
-                            <div>结束时间：${c.enddate}</div>
-                            <div>开售时间：${c.saletime}</div>
-                        `;
+                    if (order.concert_id) {
+                        const concertResponse = await apiRequest(`/concert/${order.concert_id}`);
+                        if (concertResponse.code === 1000 && concertResponse.data) {
+                            const concert = concertResponse.data;
+                            concertInfoDiv.innerHTML = `
+                                <h3>演唱会详情</h3>
+                                <div><b>${concert.title}</b></div>
+                                <div>开始时间：${new Date(concert.date).toLocaleString()}</div>
+                                <div>结束时间：${new Date(concert.enddate).toLocaleString()}</div>
+                                <div>开售时间：${new Date(concert.saletime).toLocaleString()}</div>
+                                <div>状态：${concert.status === 0 ? '未开始售票' : concert.status === 1 ? '售票中' : '已结束'}</div>
+                            `;
+                        }
                     }
                 } else {
                     orderInfoDiv.innerHTML = '未找到订单信息';
                 }
-            } catch (e) {
+            } catch (error) {
                 orderInfoDiv.innerHTML = '加载失败';
             }
         }
         function viewConcert(concertId) {
             window.location.href = `concert_detail.html?concert_id=${concertId}`;
         }
-        document.addEventListener('DOMContentLoaded', loadOrderDetail);
+        document.addEventListener('DOMContentLoaded', () => {
+            auth.init();
+            loadOrderDetail();
+        });
+
+        // 获取订单状态文本
+        function getOrderStatusText(status) {
+            switch (status) {
+                case 1: return "未支付";
+                case 2: return "已支付";
+                case 3: return "已过期";
+                case 4: return "已取消";
+                default: return "未知状态";
+            }
+        }
     </script>
 </body>
 </html> 

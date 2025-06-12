@@ -4,25 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>演唱会票务系统</title>
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #1976d2; color: white; }
+        .logo { font-size: 20px; font-weight: bold; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: white; text-decoration: none; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .form-container { max-width: 400px; margin: 2rem auto; padding: 2rem; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: #666; }
+        .form-group input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        button { width: 100%; padding: 0.75rem; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        button:hover { background-color: #1565c0; }
+        .concert-list { margin-top: 2rem; }
+        .concerts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
+        .concert-card { background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .concert-card-content { padding: 1rem; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <!-- 导航栏 -->
-        <nav class="navbar">
-            <div class="logo">演唱会票务系统</div>
-            <div class="nav-links">
-                <a href="index.html" class="active" data-page="home">首页</a>
-                <a href="#" data-page="concerts">演唱会列表</a>
-                <a href="orders.html" data-page="orders">我的订单</a>
-                <div class="user-section">
-                    <a href="#" data-page="login" id="loginBtn">登录</a>
-                    <a href="#" data-page="register" id="registerBtn">注册</a>
-                    <a href="#" id="logoutBtn" style="display: none;">退出</a>
-                </div>
+    <nav class="navbar">
+        <div class="logo">演唱会票务系统</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="index.html">演唱会列表</a>
+            <a href="orders.html">我的订单</a>
+            <div class="user-section">
+                <a href="#" id="loginBtn">登录</a>
+                <a href="#" id="registerBtn">注册</a>
+                <a href="#" id="logoutBtn" style="display: none;">退出</a>
             </div>
-        </nav>
+        </div>
+    </nav>
 
+    <div class="container">
         <!-- 主要内容区域 -->
         <main>
             <!-- 登录表单 -->
@@ -62,18 +78,7 @@
                 <h2>演唱会列表</h2>
                 <div class="concerts-grid" id="concertsGrid"></div>
             </div>
-
-            <!-- 演唱会详情 -->
-            <div class="concert-detail" id="concertDetail" style="display: none;">
-                <h2>演唱会详情</h2>
-                <div class="detail-content">
-                    <div class="concert-info"></div>
-                    <div class="seat-selection">
-                        <h3>选择座位</h3>
-                        <div class="seat-map"></div>
-                    </div>
-                </div>
-            </div>
+            <!-- 演唱会详情已拆分到 concert_detail.html，不再在此处展示 -->
         </main>
     </div>
 
