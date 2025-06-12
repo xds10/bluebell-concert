@@ -1,4 +1,23 @@
-<< EOL
+# 忽略所有日志文件
 *.log
 web_app*.log
-EOL
+logs/
+*.log.*
+
+# 忽略编译生成的文件
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# 忽略IDE和编辑器生成的文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 忽略操作系统生成的文件
+.DS_Store
+Thumbs.db
