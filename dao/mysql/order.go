@@ -79,3 +79,16 @@ func AddOrderTx(tx *sqlx.Tx, order *models.Order) error {
 	order.ID, err = result.LastInsertId()
 	return err
 }
+
+// GetOrderBySeat 根据演唱会ID和座位ID查询订单
+func GetOrderBySeat(concertID, seatID int64) (*models.Order, error) {
+	sqlStr := `select id,user_id,concert_id,seat_id,price,status,create_time 
+              from orders where concert_id = ? and seat_id = ? 
+              order by create_time desc limit 1`
+	order := &models.Order{}
+	err := db.Get(order, sqlStr, concertID, seatID)
+	if err != nil {
+		return nil, err
+	}
+	return order, nil
+}

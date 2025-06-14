@@ -153,3 +153,40 @@ func CancelOrderHandler(c *gin.Context) {
 	// 3. 返回响应
 	ResponseSuccess(c, nil)
 }
+
+// 根据演唱会ID和座位ID查询订单
+func GetOrderByTicketInfoHandler(c *gin.Context) {
+	// 1. 获取参数
+	type TicketQuery struct {
+		ConcertID int64 `json:"concert_id" binding:"required"`
+		SeatID    int64 `json:"seat_id" binding:"required"`
+	}
+	
+	var req TicketQuery
+	if err := c.ShouldBindJSON(&req); err != nil {
+		zap.L().Error("get order by ticket with invalid params", zap.Error(err))
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			ResponseError(c, CodeInvalidParam)
+			return
+		}
+		ResponseErrorWithMsg(c, CodeInvalidParam, errs.Translate(trans))
+		return
+	}
+	
+	// 2. 业务处理
+	order, err := logic.GetOrderByTicketInfo(req.ConcertID, req.SeatID)
+	if err != nil {
+		zap.L().Error("logic.GetOrderByTicketInfo failed", zap.Error(err))
+		ResponseError(c, CodeServerBusy)
+		return
+	}
+	
+	// 3. 返回响应
+	if order == nil {
+		// 订单可能还在处理中
+		ResponseError(c, CodeOrderProcessing)
+		return
+	}
+	ResponseSuccess(c, order)
+}

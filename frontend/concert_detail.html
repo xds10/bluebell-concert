@@ -345,29 +345,74 @@
 
         async function selectSeat(concertId, section) {
             try {
-                const response = await apiRequest('/buy', {
-                    method: 'POST',
-                    body: JSON.stringify({ concert_id: parseInt(concertId), seat_idx: { section } })
-                });
+                // 发送购票请求
+                const response = await concertAPI.buyTicket(concertId, section);
                 if (response.code === 1000) {
-                    // 选座成功后跳转到订单详情页
-                    const orderData = {
-                        id: response.data.id,
-                        user_id: response.data.user_id,
-                        concert_id: response.data.concert_id,
-                        seat_id: response.data.seat_idx.id,
-                        price: response.data.seat_idx.price,
-                        status: 0,
-                        create_time: new Date().toISOString()
-                    };
-                    localStorage.setItem('currentOrder', JSON.stringify(orderData));
-                    window.location.href = `order_detail.html?order_id=${response.data.id}`;
+                    // 获取座位ID
+                    if (response.data && response.data.seat_idx && response.data.seat_idx.seat_id) {
+                        const seatId = response.data.seat_idx.seat_id;
+                        // 显示处理中状态
+                        alert('购票请求已提交，正在处理中...');
+                        // 等待订单生成
+                        await pollOrderStatus(concertId, seatId);
+                    } else {
+                        alert('购票成功，但无法获取座位信息');
+                    }
                 } else {
                     alert('选座失败：' + (response.msg || '未知错误'));
                 }
             } catch (error) {
+                console.error('购票出错:', error);
                 alert('选座失败，请稍后重试');
             }
+        }
+        
+        // 轮询订单状态
+        async function pollOrderStatus(concertId, seatId) {
+            const maxAttempts = 10;
+            const delayMs = 500;
+            let attempts = 0;
+            
+            const checkOrder = async () => {
+                try {
+                    const response = await concertAPI.getOrderByTicketInfo(concertId, seatId);
+                    
+                    if (response.code === 1000 && response.data && response.data.id) {
+                        // 订单已创建成功
+                        localStorage.setItem('currentOrder', JSON.stringify(response.data));
+                        window.location.href = `order_detail.html?order_id=${response.data.id}`;
+                        return true;
+                    } else if (response.code === 1012) {
+                        // 订单仍在处理中
+                        return false;
+                    } else {
+                        // 出现其他错误
+                        alert('获取订单信息失败: ' + (response.msg || '未知错误'));
+                        return true; // 停止轮询
+                    }
+                } catch (error) {
+                    console.error('查询订单状态失败:', error);
+                    return false;
+                }
+            };
+            
+            const poll = async () => {
+                if (attempts >= maxAttempts) {
+                    alert('订单处理超时，请在"我的订单"中查看结果');
+                    window.location.href = 'orders.html';
+                    return;
+                }
+                
+                attempts++;
+                const done = await checkOrder();
+                
+                if (!done) {
+                    setTimeout(poll, delayMs);
+                }
+            };
+            
+            // 开始轮询
+            await poll();
         }
 
         document.addEventListener('DOMContentLoaded', () => {

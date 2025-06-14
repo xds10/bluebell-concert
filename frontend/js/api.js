@@ -77,10 +77,21 @@ const concertAPI = {
         return apiRequest('/buy', {
             method: 'POST',
             body: JSON.stringify({
-                concert_id: concertId,
+                concert_id: parseInt(concertId),
                 seat_idx: {
                     section: seatSection
                 }
+            })
+        });
+    },
+
+    // 根据票务信息查询订单
+    getOrderByTicketInfo: async (concertId, seatId) => {
+        return apiRequest('/ticket-order', {
+            method: 'POST',
+            body: JSON.stringify({
+                concert_id: parseInt(concertId),
+                seat_id: parseInt(seatId)
             })
         });
     },

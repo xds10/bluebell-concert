@@ -12,6 +12,9 @@ const (
 
 	CodeNeedLogin
 	CodeInvalidToken
+
+	// 订单处理中的状态码
+	CodeOrderProcessing = 1012
 )
 
 var codeMsg = map[ResCode]string{
