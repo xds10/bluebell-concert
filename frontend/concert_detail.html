@@ -48,6 +48,39 @@
             cursor: pointer; 
         }
         .close-btn:hover { color: #000; }
+        /* 座位可用性样式 */
+        .seat-availability { 
+            margin-bottom: 32px; 
+            padding: 20px; 
+            background: #f0f8ff; 
+            border-radius: 8px;
+        }
+        .seat-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .section-stats {
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 150px;
+        }
+        .section-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .availability-good {
+            color: #4caf50;
+        }
+        .availability-limited {
+            color: #ff9800;
+        }
+        .availability-sold {
+            color: #f44336;
+        }
     </style>
 </head>
 <body>
@@ -67,6 +100,10 @@
     <div class="detail-container">
         <h2>演唱会详情</h2>
         <div class="concert-info" id="concertInfo">加载中...</div>
+        <div id="seatAvailability" class="seat-availability">
+            <h3>区域余票</h3>
+            <div id="seatStats" class="seat-stats">加载中...</div>
+        </div>
         <div class="seat-selection">
             <h3>选择座位</h3>
             <div class="seat-map" id="seatMap"></div>
@@ -130,6 +167,56 @@
             document.getElementById('captchaModal').style.display = 'none';
         }
 
+        // 加载座位可用性信息
+        async function loadSeatAvailability(concertId) {
+            const seatStatsDiv = document.getElementById('seatStats');
+            try {
+                const response = await concertAPI.getSeatsInfo(concertId);
+                if (response.code === 1000 && response.data) {
+                    const seatInfo = response.data;
+                    const sections = seatInfo.sections;
+                    
+                    if (Object.keys(sections).length === 0) {
+                        seatStatsDiv.innerHTML = '<div>暂无座位信息</div>';
+                        return;
+                    }
+                    
+                    let html = '';
+                    for (const section in sections) {
+                        const stats = sections[section];
+                        const total = stats.total;
+                        const available = stats.available;
+                        const percentage = Math.round((available / total) * 100);
+                        
+                        let availabilityClass = '';
+                        if (percentage > 50) {
+                            availabilityClass = 'availability-good';
+                        } else if (percentage > 0) {
+                            availabilityClass = 'availability-limited';
+                        } else {
+                            availabilityClass = 'availability-sold';
+                        }
+                        
+                        html += `
+                            <div class="section-stats">
+                                <div class="section-name">${section}</div>
+                                <div class="${availabilityClass}">
+                                    可用: ${available}/${total} (${percentage}%)
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    seatStatsDiv.innerHTML = html;
+                } else {
+                    seatStatsDiv.innerHTML = '<div>获取座位信息失败</div>';
+                }
+            } catch (error) {
+                console.error('加载座位可用性信息失败:', error);
+                seatStatsDiv.innerHTML = '<div>加载座位信息失败</div>';
+            }
+        }
+
         async function loadConcertDetail() {
             const params = new URLSearchParams(window.location.search);
             const concertId = params.get('concert_id');
@@ -163,13 +250,16 @@
                     // 判断实际状态
                     if (now < saleTime) {
                         statusText = '未开始售票';
+                        canSelectSeat = false;
                     } else if (now >= saleTime && now < startDate) {
                         statusText = '售票中';
                         canSelectSeat = true;
                     } else if (now >= startDate && now < endDate) {
                         statusText = '演出中';
+                        canSelectSeat = false; // 演出已经开始，不能再购票
                     } else {
                         statusText = '已结束';
+                        canSelectSeat = false;
                     }
                     
                     console.log('计算的状态:', statusText);
@@ -182,6 +272,9 @@
                         <div>开售时间：${new Date(c.saletime).toLocaleString()}</div>
                         <div>状态：${statusText}</div>
                     `;
+                    
+                    // 加载座位可用性信息
+                    loadSeatAvailability(concertId);
                     
                     // 根据实际计算的状态决定是否显示座位选择
                     if (canSelectSeat) {
@@ -200,25 +293,54 @@
             }
         }
 
-        function showSeatSelection(concertId) {
-            const seatMapDiv = document.getElementById('seatMap');
-            seatMapDiv.innerHTML = '';
-            const sections = ['VIP区', 'A区', 'B区', 'C区'];
-            sections.forEach(section => {
-                const btn = document.createElement('button');
-                btn.className = 'section-btn';
-                btn.textContent = section;
-                btn.onclick = () => {
-                    console.log('点击座位按钮:', section);
-                    if (!auth.isAuthenticated) {
-                        alert('请先登录');
-                        return;
-                    }
-                    console.log('准备显示验证码弹窗');
-                    showCaptchaModal(concertId, section);
-                };
-                seatMapDiv.appendChild(btn);
-            });
+        // 显示座位选择
+        async function showSeatSelection(concertId) {
+            try {
+                // 检查当前时间是否在可售票时间段内
+                const concertResponse = await apiRequest(`/concert/${concertId}`);
+                if (concertResponse.code !== 1000 || !concertResponse.data) {
+                    throw new Error('无法获取演唱会信息');
+                }
+                
+                const concert = concertResponse.data;
+                const now = new Date();
+                const saleTime = new Date(concert.saletime);
+                const startDate = new Date(concert.date);
+                
+                // 再次验证是否可以售票（防止页面长时间打开后状态变化）
+                if (now < saleTime || now >= startDate) {
+                    const statusText = now < saleTime ? '未开始售票' : '演出已开始';
+                    document.getElementById('seatMap').innerHTML = 
+                        `<div style="padding: 32px; text-align: center; color: #888; font-size: 20px;">
+                            ${statusText}，无法购票
+                        </div>`;
+                    return;
+                }
+                
+                // 获取演唱会座位区域信息
+                const seatMap = document.getElementById('seatMap');
+                
+                seatMap.innerHTML = '';
+                const sections = ['VIP区', 'A区', 'B区', 'C区'];
+                sections.forEach(section => {
+                    const btn = document.createElement('button');
+                    btn.className = 'section-btn';
+                    btn.textContent = section;
+                    btn.onclick = () => {
+                        console.log('点击座位按钮:', section);
+                        if (!auth.isAuthenticated) {
+                            alert('请先登录');
+                            return;
+                        }
+                        console.log('准备显示验证码弹窗');
+                        showCaptchaModal(concertId, section);
+                    };
+                    seatMap.appendChild(btn);
+                });
+            } catch (error) {
+                console.error('显示座位选择失败:', error);
+                document.getElementById('seatMap').innerHTML = '<div>加载座位信息失败</div>';
+            }
         }
 
         async function selectSeat(concertId, section) {

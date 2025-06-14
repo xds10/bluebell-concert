@@ -73,3 +73,26 @@ func GetConcertDetailHandler(c *gin.Context) {
 	// 返回响应
 	ResponseSuccess(c, data)
 }
+
+// GetConcertSeatsHandler 获取演唱会座位信息
+func GetConcertSeatsHandler(c *gin.Context) {
+	// 1. 获取参数
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		zap.L().Error("get concert seats with invalid param", zap.Error(err))
+		ResponseError(c, CodeInvalidParam)
+		return
+	}
+
+	// 2. 获取演唱会座位信息
+	seatInfo, err := logic.GetConcertSeats(id)
+	if err != nil {
+		zap.L().Error("logic.GetConcertSeats failed", zap.Error(err))
+		ResponseError(c, CodeServerBusy)
+		return
+	}
+
+	// 3. 返回响应
+	ResponseSuccess(c, seatInfo)
+}

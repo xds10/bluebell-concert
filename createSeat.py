@@ -13,18 +13,18 @@ DB_CONFIG = {
 }
 
 # 场馆ID
-PLACE_ID = 1
+PLACE_ID = 2
 
-PLACE="家门口"
+PLACE="大型体育场"
 
 # 座位区域配置（区域名称列表）
 SECTIONS = ['VIP区', 'A区', 'B区', 'C区']
 
 # 每个区域的排数
-ROWS_PER_SECTION = 3
+ROWS_PER_SECTION = 50
 
 # 每排的座位数
-SEATS_PER_ROW = 5
+SEATS_PER_ROW = 100
 
 # 区域价格配置（需与区域数量匹配）
 PRICES = [1980.0, 1280.0, 880.0, 580.0]

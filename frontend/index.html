@@ -4,36 +4,447 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>演唱会票务系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; background: #f7f7f7; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #1976d2; color: white; }
-        .logo { font-size: 20px; font-weight: bold; }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a { color: white; text-decoration: none; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .form-container { max-width: 400px; margin: 2rem auto; padding: 2rem; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; color: #666; }
-        .form-group input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
-        button { width: 100%; padding: 0.75rem; background-color: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
-        button:hover { background-color: #1565c0; }
-        .concert-list { margin-top: 2rem; }
-        .concerts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
-        .concert-card { background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .concert-card-content { padding: 1rem; }
+        :root {
+            --primary-color: #3f51b5;
+            --primary-dark: #303f9f;
+            --primary-light: #c5cae9;
+            --accent-color: #ff4081;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --divider-color: #bdbdbd;
+            --background-color: #f5f5f5;
+            --card-color: #ffffff;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --warning-color: #ff9800;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Noto Sans SC', Arial, sans-serif; 
+            background: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .navbar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px 5%; 
+            background: var(--primary-color); 
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            padding: 10px 5%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .logo { 
+            font-size: 24px; 
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 10px;
+            font-size: 28px;
+        }
+        
+        .nav-links { 
+            display: flex; 
+            gap: 25px;
+            align-items: center;
+        }
+        
+        .nav-links a { 
+            color: white; 
+            text-decoration: none;
+            font-weight: 500;
+            position: relative;
+            padding: 5px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-light);
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: white;
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 30px 20px;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .hero-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease;
+        }
+        
+        .hero-section p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 30px;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease 0.2s both;
+        }
+        
+        .search-bar {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            display: flex;
+            background: white;
+            border-radius: 50px;
+            padding: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            animation: fadeInUp 1s ease 0.4s both;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            border: none;
+            padding: 15px 20px;
+            font-size: 16px;
+            border-radius: 50px 0 0 50px;
+            outline: none;
+        }
+        
+        .search-bar button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 0 50px 50px 0;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .search-bar button:hover {
+            background: #e91e63;
+        }
+        
+        .form-container { 
+            max-width: 400px; 
+            margin: 2rem auto; 
+            padding: 2.5rem; 
+            background-color: var(--card-color); 
+            border-radius: 10px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .form-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+        }
+        
+        .form-container h2 {
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            text-align: center;
+        }
+        
+        .form-group { 
+            margin-bottom: 1.5rem; 
+        }
+        
+        .form-group label { 
+            display: block; 
+            margin-bottom: 0.5rem; 
+            color: var(--text-secondary); 
+            font-weight: 500;
+        }
+        
+        .form-group input { 
+            width: 100%; 
+            padding: 12px 15px; 
+            border: 1px solid var(--divider-color); 
+            border-radius: 6px; 
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+            outline: none;
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: var(--primary-color); 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 1rem; 
+            font-weight: 500;
+            cursor: pointer; 
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        
+        button:hover { 
+            background-color: var(--primary-dark); 
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        .concert-list { 
+            margin-top: 3rem;
+            animation: fadeIn 1s ease;
+        }
+        
+        .concert-list h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            position: relative;
+            padding-bottom: 10px;
+        }
+        
+        .concert-list h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background-color: var(--accent-color);
+        }
+        
+        .concerts-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 2rem; 
+        }
+        
+        .concert-card { 
+            background-color: var(--card-color); 
+            border-radius: 10px; 
+            overflow: hidden; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        .concert-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+        }
+        
+        .concert-image {
+            height: 180px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .concert-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: white;
+        }
+        
+        .status-upcoming {
+            background-color: var(--primary-color);
+        }
+        
+        .status-selling {
+            background-color: var(--success-color);
+        }
+        
+        .status-ended {
+            background-color: var(--text-secondary);
+        }
+        
+        .concert-card-content { 
+            padding: 1.5rem; 
+        }
+        
+        .concert-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+        
+        .concert-info {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .concert-info i {
+            width: 20px;
+            margin-right: 5px;
+            color: var(--primary-color);
+        }
+        
+        .concert-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .concert-price {
+            font-weight: 700;
+            color: var(--accent-color);
+            font-size: 1.2rem;
+        }
+        
+        .detail-btn {
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .detail-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                padding: 15px;
+            }
+            
+            .logo {
+                margin-bottom: 15px;
+            }
+            
+            .nav-links {
+                width: 100%;
+                justify-content: space-around;
+                flex-wrap: wrap;
+            }
+            
+            .hero-section {
+                padding: 40px 15px;
+            }
+            
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+            
+            .search-bar {
+                flex-direction: column;
+                border-radius: 10px;
+                padding: 0;
+            }
+            
+            .search-bar input {
+                border-radius: 10px 10px 0 0;
+            }
+            
+            .search-bar button {
+                border-radius: 0 0 10px 10px;
+                width: 100%;
+            }
+            
+            .concerts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .form-container {
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">演唱会票务系统</div>
+        <div class="logo">
+            <i class="fas fa-ticket-alt"></i>
+            演唱会票务系统
+        </div>
         <div class="nav-links">
-            <a href="index.html">首页</a>
-            <a href="index.html">演唱会列表</a>
-            <a href="orders.html">我的订单</a>
+            <a href="index.html"><i class="fas fa-home"></i> 首页</a>
+            <a href="index.html"><i class="fas fa-list"></i> 演唱会列表</a>
+            <a href="orders.html"><i class="fas fa-shopping-cart"></i> 我的订单</a>
             <div class="user-section">
-                <a href="#" id="loginBtn">登录</a>
-                <a href="#" id="registerBtn">注册</a>
-                <a href="#" id="logoutBtn" style="display: none;">退出</a>
+                <a href="#" id="loginBtn"><i class="fas fa-sign-in-alt"></i> 登录</a>
+                <a href="#" id="registerBtn"><i class="fas fa-user-plus"></i> 注册</a>
+                <a href="#" id="logoutBtn" style="display: none;"><i class="fas fa-sign-out-alt"></i> 退出</a>
             </div>
         </div>
     </nav>
@@ -41,44 +452,49 @@
     <div class="container">
         <!-- 主要内容区域 -->
         <main>
+            <!-- 英雄区域 -->
+            <div class="hero-section">
+                <h1>探索精彩演唱会，预定难忘体验</h1>
+                <p>浏览最新的演唱会信息，在线选座购票，尽享音乐盛宴</p>
+            </div>
+            
             <!-- 登录表单 -->
             <div class="form-container" id="loginForm" style="display: none;">
-                <h2>用户登录</h2>
+                <h2><i class="fas fa-user-circle"></i> 用户登录</h2>
                 <form id="login">
                     <div class="form-group">
                         <label for="loginUsername">用户名</label>
-                        <input type="text" id="loginUsername" required>
+                        <input type="text" id="loginUsername" required placeholder="请输入用户名">
                     </div>
                     <div class="form-group">
                         <label for="loginPassword">密码</label>
-                        <input type="password" id="loginPassword" required>
+                        <input type="password" id="loginPassword" required placeholder="请输入密码">
                     </div>
-                    <button type="submit">登录</button>
+                    <button type="submit"><i class="fas fa-sign-in-alt"></i> 登录</button>
                 </form>
             </div>
 
             <!-- 注册表单 -->
             <div class="form-container" id="registerForm" style="display: none;">
-                <h2>用户注册</h2>
+                <h2><i class="fas fa-user-plus"></i> 用户注册</h2>
                 <form id="register">
                     <div class="form-group">
                         <label for="registerUsername">用户名</label>
-                        <input type="text" id="registerUsername" required>
+                        <input type="text" id="registerUsername" required placeholder="请设置用户名">
                     </div>
                     <div class="form-group">
                         <label for="registerPassword">密码</label>
-                        <input type="password" id="registerPassword" required>
+                        <input type="password" id="registerPassword" required placeholder="请设置密码">
                     </div>
-                    <button type="submit">注册</button>
+                    <button type="submit"><i class="fas fa-user-check"></i> 注册</button>
                 </form>
             </div>
 
             <!-- 演唱会列表 -->
             <div class="concert-list" id="concertList">
-                <h2>演唱会列表</h2>
+                <h2>热门演唱会</h2>
                 <div class="concerts-grid" id="concertsGrid"></div>
             </div>
-            <!-- 演唱会详情已拆分到 concert_detail.html，不再在此处展示 -->
         </main>
     </div>
 
@@ -86,5 +502,16 @@
     <script src="js/auth.js"></script>
     <script src="js/concert.js"></script>
     <script src="js/main.js"></script>
+    <script>
+        // 滚动效果
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
 </body>
 </html> 

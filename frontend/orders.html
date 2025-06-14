@@ -57,6 +57,17 @@
         .page-btn:hover:not(.active) {
             background-color: #e8e8e8;
         }
+        .search-container {
+            margin-bottom: 20px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -75,6 +86,9 @@
     </nav>
     <div class="orders-container">
         <h2>我的订单</h2>
+        <div class="search-container">
+            <input type="text" id="orderSearchInput" placeholder="搜索订单号或演唱会名称..." class="search-input">
+        </div>
         <div id="ordersList">加载中...</div>
         <div id="pagination" class="pagination"></div>
     </div>
@@ -85,6 +99,7 @@
         let currentPage = 1;
         const ordersPerPage = 10;
         let allOrders = [];
+        let filteredOrders = [];
         
         async function loadOrders() {
             const ordersListDiv = document.getElementById('ordersList');
@@ -115,11 +130,17 @@
                         return new Date(b.create_time) - new Date(a.create_time);
                     });
                     
+                    // 初始化过滤后的订单列表
+                    filteredOrders = [...allOrders];
+                    
                     // 显示当前页的订单
-                    displayOrdersPage(currentPage);
+                    await displayOrdersPage(currentPage);
                     
                     // 设置分页
                     setupPagination();
+                    
+                    // 初始化搜索功能
+                    initSearch();
                 } else {
                     ordersListDiv.innerHTML = '<div style="padding: 32px; text-align: center; color: #888; font-size: 20px;">加载失败</div>';
                     paginationDiv.innerHTML = '';
@@ -130,14 +151,70 @@
             }
         }
         
-        function displayOrdersPage(page) {
+        function initSearch() {
+            const searchInput = document.getElementById('orderSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', async () => {
+                    const searchTerm = searchInput.value.trim().toLowerCase();
+                    
+                    // 过滤订单
+                    filteredOrders = allOrders.filter(order => {
+                        // 搜索订单号
+                        if (order.id && order.id.toString().includes(searchTerm)) {
+                            return true;
+                        }
+                        
+                        // 搜索演唱会名称
+                        if (order.concert_title && order.concert_title.toLowerCase().includes(searchTerm)) {
+                            return true;
+                        }
+                        
+                        return false;
+                    });
+                    
+                    // 重置到第一页
+                    currentPage = 1;
+                    
+                    // 更新显示
+                    await displayOrdersPage(currentPage);
+                    setupPagination();
+                });
+            }
+        }
+        
+        async function displayOrdersPage(page) {
             const ordersListDiv = document.getElementById('ordersList');
             ordersListDiv.innerHTML = '';
             
+            if (filteredOrders.length === 0) {
+                ordersListDiv.innerHTML = '<div style="padding: 32px; text-align: center; color: #888; font-size: 20px;">没有找到匹配的订单</div>';
+                return;
+            }
+            
             // 计算当前页应该显示的订单
             const startIndex = (page - 1) * ordersPerPage;
-            const endIndex = Math.min(startIndex + ordersPerPage, allOrders.length);
-            const currentPageOrders = allOrders.slice(startIndex, endIndex);
+            const endIndex = Math.min(startIndex + ordersPerPage, filteredOrders.length);
+            const currentPageOrders = filteredOrders.slice(startIndex, endIndex);
+            
+            // 创建一个映射来存储演唱会ID和标题
+            const concertTitles = {};
+            
+            // 首先获取所有需要的演唱会信息
+            const concertPromises = currentPageOrders
+                .filter(order => order.concert_id && !concertTitles[order.concert_id])
+                .map(async order => {
+                    try {
+                        const response = await concertAPI.getDetail(order.concert_id);
+                        if (response.code === 1000 && response.data) {
+                            concertTitles[order.concert_id] = response.data.title;
+                        }
+                    } catch (error) {
+                        console.error(`获取演唱会信息失败，ID: ${order.concert_id}`, error);
+                    }
+                });
+            
+            // 等待所有演唱会信息获取完成
+            await Promise.all(concertPromises);
             
             currentPageOrders.forEach(order => {
                 // 获取座位信息
@@ -147,17 +224,43 @@
                     seatInfo = `${seat.section || '未知区域'}`;
                     if (seat.seat_row) seatInfo += ` ${seat.seat_row}排`;
                     if (seat.seat_no) seatInfo += ` ${seat.seat_no}号`;
-                } else if (order.seat_section) {
-                    // 兼容旧数据结构
-                    seatInfo = order.seat_section;
+                } else {
+                    // 如果订单没有座位信息，尝试从订单详情获取
+                    (async function() {
+                        try {
+                            const orderDetail = await orderAPI.getOrderDetail(order.id);
+                            if (orderDetail.code === 1000 && orderDetail.data && 
+                                orderDetail.data.ticket && orderDetail.data.ticket.seat_idx) {
+                                const seat = orderDetail.data.ticket.seat_idx;
+                                const seatText = `${seat.section || '未知区域'} ${seat.seat_row || ''}排 ${seat.seat_no || ''}号`;
+                                
+                                // 找到当前订单对应的DOM元素并更新座位信息
+                                const orderElements = document.querySelectorAll(`.order-item`);
+                                orderElements.forEach(elem => {
+                                    const idElem = elem.querySelector('b');
+                                    if (idElem && idElem.textContent === `订单号：${order.id}`) {
+                                        const seatElem = elem.querySelector('div:nth-child(3)');
+                                        if (seatElem) {
+                                            seatElem.textContent = `座位：${seatText}`;
+                                        }
+                                    }
+                                });
+                            }
+                        } catch (error) {
+                            console.error(`获取订单详情失败，ID: ${order.id}`, error);
+                        }
+                    })();
                 }
+                
+                // 获取演唱会标题
+                const concertTitle = order.concert_id ? (concertTitles[order.concert_id] || '加载中...') : '未知';
                 
                 const orderDiv = document.createElement('div');
                 orderDiv.className = 'order-item';
                 orderDiv.innerHTML = `
                     <div class="order-info">
                         <div><b>订单号：${order.id}</b></div>
-                        <div>演唱会：${order.concert_title || '未知'}</div>
+                        <div>演唱会：${concertTitle}</div>
                         <div>座位：${seatInfo}</div>
                         <div>价格：${order.price || '未知'}</div>
                         <div>状态：${getOrderStatusText(order.status)}</div>
@@ -175,7 +278,7 @@
             const paginationDiv = document.getElementById('pagination');
             paginationDiv.innerHTML = '';
             
-            const totalPages = Math.ceil(allOrders.length / ordersPerPage);
+            const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
             
             // 如果只有一页，不显示分页
             if (totalPages <= 1) {
@@ -187,9 +290,9 @@
                 const prevBtn = document.createElement('div');
                 prevBtn.className = 'page-btn';
                 prevBtn.textContent = '上一页';
-                prevBtn.addEventListener('click', () => {
+                prevBtn.addEventListener('click', async () => {
                     currentPage--;
-                    displayOrdersPage(currentPage);
+                    await displayOrdersPage(currentPage);
                     setupPagination();
                 });
                 paginationDiv.appendChild(prevBtn);
@@ -203,9 +306,9 @@
                     pageBtn.classList.add('active');
                 }
                 pageBtn.textContent = i;
-                pageBtn.addEventListener('click', () => {
+                pageBtn.addEventListener('click', async () => {
                     currentPage = i;
-                    displayOrdersPage(currentPage);
+                    await displayOrdersPage(currentPage);
                     setupPagination();
                 });
                 paginationDiv.appendChild(pageBtn);
@@ -216,9 +319,9 @@
                 const nextBtn = document.createElement('div');
                 nextBtn.className = 'page-btn';
                 nextBtn.textContent = '下一页';
-                nextBtn.addEventListener('click', () => {
+                nextBtn.addEventListener('click', async () => {
                     currentPage++;
-                    displayOrdersPage(currentPage);
+                    await displayOrdersPage(currentPage);
                     setupPagination();
                 });
                 paginationDiv.appendChild(nextBtn);

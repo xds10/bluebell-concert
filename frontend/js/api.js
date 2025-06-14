@@ -62,6 +62,10 @@ const concertAPI = {
         return apiRequest(`/concert/${id}`);
     },
 
+    getSeatsInfo: async (id) => {
+        return apiRequest(`/concert/${id}/seats`);
+    },
+
     create: async (concertData) => {
         return apiRequest('/create_concert', {
             method: 'POST',

@@ -102,9 +102,56 @@
                         seatInfo = order.seat_section;
                     }
                     
+                    // 获取演唱会详情
+                    let concertTitle = '未知';
+                    if (order.concert_id) {
+                        try {
+                            const concertResponse = await concertAPI.getDetail(order.concert_id);
+                            if (concertResponse.code === 1000 && concertResponse.data) {
+                                const concert = concertResponse.data;
+                                concertTitle = concert.title;
+                                
+                                // 计算演唱会状态
+                                const now = new Date();
+                                const saleTime = new Date(concert.saletime);
+                                const startDate = new Date(concert.date);
+                                const endDate = new Date(concert.enddate);
+                                
+                                console.log('当前时间:', now);
+                                console.log('开售时间:', saleTime);
+                                console.log('开始时间:', startDate);
+                                console.log('结束时间:', endDate);
+                                
+                                let statusText = '未知状态';
+                                
+                                // 判断实际状态
+                                if (now < saleTime) {
+                                    statusText = '未开始售票';
+                                } else if (now >= saleTime && now < startDate) {
+                                    statusText = '售票中';
+                                } else if (now >= startDate && now < endDate) {
+                                    statusText = '演出中';
+                                } else {
+                                    statusText = '已结束';
+                                }
+                                
+                                concertInfoDiv.innerHTML = `
+                                    <h3>演唱会详情</h3>
+                                    <div><b>${concert.title}</b></div>
+                                    <div>开始时间：${new Date(concert.date).toLocaleString()}</div>
+                                    <div>结束时间：${new Date(concert.enddate).toLocaleString()}</div>
+                                    <div>开售时间：${new Date(concert.saletime).toLocaleString()}</div>
+                                    <div>状态：${statusText}</div>
+                                `;
+                            }
+                        } catch (error) {
+                            console.error('获取演唱会详情失败:', error);
+                        }
+                    }
+                    
                     orderInfoDiv.innerHTML = `
                         <div><b>订单号：${order.id}</b></div>
-                        <div>演唱会：${order.concert_title || '未知'}</div>
+                        <div>演唱会：${concertTitle}</div>
                         <div>座位：${seatInfo}</div>
                         <div>价格：${order.price || '未知'}</div>
                         <div>状态：${getOrderStatusText(order.status)}</div>
@@ -142,47 +189,6 @@
                     } else {
                         payBtn.style.display = 'none';
                         cancelBtn.style.display = 'none';
-                    }
-                    
-                    // 获取演唱会详情
-                    if (order.concert_id) {
-                        const concertResponse = await apiRequest(`/concert/${order.concert_id}`);
-                        if (concertResponse.code === 1000 && concertResponse.data) {
-                            const concert = concertResponse.data;
-                            
-                            // 计算演唱会状态
-                            const now = new Date();
-                            const saleTime = new Date(concert.saletime);
-                            const startDate = new Date(concert.date);
-                            const endDate = new Date(concert.enddate);
-                            
-                            console.log('当前时间:', now);
-                            console.log('开售时间:', saleTime);
-                            console.log('开始时间:', startDate);
-                            console.log('结束时间:', endDate);
-                            
-                            let statusText = '未知状态';
-                            
-                            // 判断实际状态
-                            if (now < saleTime) {
-                                statusText = '未开始售票';
-                            } else if (now >= saleTime && now < startDate) {
-                                statusText = '售票中';
-                            } else if (now >= startDate && now < endDate) {
-                                statusText = '演出中';
-                            } else {
-                                statusText = '已结束';
-                            }
-                            
-                            concertInfoDiv.innerHTML = `
-                                <h3>演唱会详情</h3>
-                                <div><b>${concert.title}</b></div>
-                                <div>开始时间：${new Date(concert.date).toLocaleString()}</div>
-                                <div>结束时间：${new Date(concert.enddate).toLocaleString()}</div>
-                                <div>开售时间：${new Date(concert.saletime).toLocaleString()}</div>
-                                <div>状态：${statusText}</div>
-                            `;
-                        }
                     }
                 } else {
                     orderInfoDiv.innerHTML = '未找到订单信息';

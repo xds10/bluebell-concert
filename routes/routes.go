@@ -33,12 +33,13 @@ func Setup(mode string) *gin.Engine {
 	v1.POST("/signup", controller.SignUpHandler)
 	v1.POST("/login", controller.LoginHandler)
 	v1.GET("/concert-list", controller.GetConcertListHandler)
+	v1.GET("/concert/:id", controller.GetConcertDetailHandler)
+	v1.GET("/concert/:id/seats", controller.GetConcertSeatsHandler)
 
 	v1.Use(middlewares.JWTAuthMiddleware()) // 认证中间件
 	{
 
 		v1.POST("/create_concert", controller.CreateConcertHandler)
-		v1.GET("/concert/:id", controller.GetConcertDetailHandler)
 		v1.POST("/buy", controller.BuyTicketHandler)
 		v1.POST("/pay", controller.PayOrderHandler)
 		v1.POST("/order-list", controller.OrderListHandler)
