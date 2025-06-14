@@ -4,6 +4,8 @@ import (
 	"time"
 	
 	"bluebell/models"
+	
+	"github.com/jmoiron/sqlx"
 )
 
 func AddOrder(order *models.Order) error {
@@ -65,4 +67,15 @@ func GetExpiredOrders() ([]*models.Order, error) {
 		return nil, err
 	}
 	return orders, nil
+}
+
+// AddOrderTx 在事务中添加订单
+func AddOrderTx(tx *sqlx.Tx, order *models.Order) error {
+	sqlStr := `insert into orders (user_id,concert_id,seat_id,price,status,create_time) values (?,?,?,?,?,?)`
+	result, err := tx.Exec(sqlStr, order.UserID, order.ConcertID, order.SeatID, order.Price, order.Status, order.CreateTime)
+	if err != nil {
+		return err
+	}
+	order.ID, err = result.LastInsertId()
+	return err
 }

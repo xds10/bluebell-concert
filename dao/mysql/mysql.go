@@ -34,3 +34,8 @@ func Init(cfg *settings.MySQLConfig) (err error) {
 func Close() {
 	_ = db.Close()
 }
+
+// DB 返回数据库连接对象，用于开始事务
+func DB() *sqlx.DB {
+	return db
+}

@@ -1,8 +1,8 @@
 -- 定义请求参数（JSON 格式）
 local request_body = [[
 {
-    "concert_id": 8,
-    "user_id": 650609386997157888,
+    "concert_id": 13,
+    "user_id": 652676240481718272,
     "seat_idx": {
         "section": "A区"
     }
@@ -13,7 +13,7 @@ local request_body = [[
 function request()
     local path = "/api/v1/buy"
     local method = "POST"
-    local token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2NTA2MDkzODY5OTcxNTc4ODgsInVzZXJfbmFtZSI6ImhhaGEiLCJpc3MiOiJjb25jZXJ0IiwiZXhwIjoxNzQ5NTQ2MTMxfQ.JjihzYT-WntrNOmu3QZ7LdoyvEeI_zH2SuJZWBXdpF0"
+    local token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo2NTI2NzYyNDA0ODE3MTgyNzIsInVzZXJfbmFtZSI6ImhhaGEzIiwiaXNzIjoiY29uY2VydCIsImV4cCI6MTc1MDc1NzQ5OH0.fqOPqkfgYev5z6nlxKT90XHOlhRoJbJ0wgM3W_IQnSs"
 
     local headers = {
         ["Content-Type"] = "application/json",

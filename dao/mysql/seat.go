@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"bluebell/models"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func GetSeatsByVenueID(venueID int) (data []*models.Seat, err error) {
@@ -40,4 +42,19 @@ func GetSeatsByConcertID(concertID int64) ([]*models.SeatRecord, error) {
 		return nil, err
 	}
 	return seats, nil
+}
+
+// GetSeatByIDTx 在事务中获取座位信息
+func GetSeatByIDTx(tx *sqlx.Tx, seatID int64) (data *models.Seat, err error) {
+	data = &models.Seat{}
+	sqlStr := `select id,section,seat_row,seat_no,price from seat where id =?`
+	err = tx.Get(data, sqlStr, seatID)
+	return
+}
+
+func BuyTicketTx(tx *sqlx.Tx, p *models.Ticket) error {
+	// 将座位标记为已选择
+	sqlStr := `update seat_record set is_selected = 1 where concert_id = ? and seat_id = ?`
+	_, err := tx.Exec(sqlStr, p.ConcertID, p.SeatIdx.SeatID)
+	return err
 }
