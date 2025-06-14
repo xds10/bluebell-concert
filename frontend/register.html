@@ -3,15 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <title>注册</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
     <style>
-        body { font-family: Arial, sans-serif; background: #f7f7f7; }
-        .register-container { max-width: 400px; margin: 80px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #ccc; padding: 32px; text-align: center; }
-        .form-group { margin-bottom: 20px; }
-        .form-control { width: 90%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
-        .btn { padding: 10px 40px; font-size: 18px; background: #1976d2; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .register-container { 
+            max-width: 400px; 
+            margin: 80px auto; 
+            background: #fff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            padding: 32px; 
+            text-align: center; 
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        .form-control { 
+            width: 90%; 
+            padding: 10px; 
+            font-size: 16px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+        }
+        .btn { 
+            padding: 10px 40px; 
+            font-size: 18px; 
+            background: #3f51b5; 
+            color: #fff; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #303f9f;
+        }
+        .login-link {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .login-link a {
+            color: #3f51b5;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="logo"><i class="fas fa-ticket-alt"></i>演唱会票务系统</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="index.html">演唱会列表</a>
+            <a href="orders.html">我的订单</a>
+            <div class="user-section">
+                <a href="login.html" id="loginBtn">登录</a>
+                <a href="register.html" id="registerBtn">注册</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="register-container">
         <h2>注册</h2>
         <form id="registerForm">
@@ -21,8 +73,17 @@
             <div class="form-group">
                 <input type="password" class="form-control" id="registerPassword" placeholder="密码" required />
             </div>
+            <div class="form-group">
+                <input type="password" class="form-control" id="confirmPassword" placeholder="确认密码" required />
+            </div>
+            <div class="form-group">
+                <input type="email" class="form-control" id="registerEmail" placeholder="电子邮箱" required />
+            </div>
             <button type="submit" class="btn">注册</button>
         </form>
+        <div class="login-link">
+            已有账号？<a href="login.html">立即登录</a>
+        </div>
     </div>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
@@ -31,7 +92,16 @@
             e.preventDefault();
             const username = document.getElementById('registerUsername').value;
             const password = document.getElementById('registerPassword').value;
-            if (await auth.register(username, password)) {
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const email = document.getElementById('registerEmail').value;
+            
+            // 验证密码一致
+            if (password !== confirmPassword) {
+                alert('两次输入的密码不一致');
+                return;
+            }
+            
+            if (await auth.register(username, password, email)) {
                 alert('注册成功，已自动登录');
                 window.location.href = 'index.html';
             } else {

@@ -18,47 +18,76 @@ body {
     padding: 0 20px;
 }
 
-/* 导航栏样式 */
-.navbar {
-    background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    padding: 1rem 0;
-    margin-bottom: 2rem;
+/* 通用导航栏样式 - 更新为统一风格 */
+.navbar { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 15px 5%; 
+    background: #3f51b5; 
+    color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
 }
 
-.navbar .container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.navbar.scrolled {
+    padding: 10px 5%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.logo {
-    font-size: 1.5rem;
+.logo { 
+    font-size: 24px; 
     font-weight: bold;
-    color: #1a73e8;
-}
-
-.nav-links {
     display: flex;
     align-items: center;
-    gap: 2rem;
 }
 
-.nav-links a {
+.logo i {
+    margin-right: 10px;
+    font-size: 28px;
+}
+
+.nav-links { 
+    display: flex; 
+    gap: 25px;
+    align-items: center;
+}
+
+.nav-links a { 
+    color: white; 
     text-decoration: none;
-    color: #333;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    transition: background-color 0.3s;
+    font-weight: 500;
+    position: relative;
+    padding: 5px 0;
+    transition: all 0.3s ease;
 }
 
 .nav-links a:hover {
-    background-color: #f0f0f0;
+    color: #c5cae9;
 }
 
-.nav-links a.active {
-    color: #1a73e8;
-    font-weight: bold;
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: white;
+    transition: width 0.3s ease;
+}
+
+.nav-links a:hover::after {
+    width: 100%;
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 /* 表单样式 */
@@ -92,7 +121,7 @@ body {
 button {
     width: 100%;
     padding: 0.75rem;
-    background-color: #1a73e8;
+    background-color: #3f51b5;
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -102,7 +131,7 @@ button {
 }
 
 button:hover {
-    background-color: #1557b0;
+    background-color: #303f9f;
 }
 
 /* 演唱会列表样式 */
@@ -195,17 +224,17 @@ button:hover {
 }
 
 .seat:hover {
-    background-color: #1a73e8;
+    background-color: #3f51b5;
     color: #fff;
 }
 
 .seat.selected {
-    background-color: #1a73e8;
+    background-color: #3f51b5;
     color: #fff;
 }
 
 .seat.unavailable {
-    background-color: #ff4444;
+    background-color: #f44336;
     cursor: not-allowed;
 }
 

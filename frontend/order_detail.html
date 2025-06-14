@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>订单详情</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
     <style>
-        body { font-family: Arial, sans-serif; background: #f7f7f7; }
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #1976d2; color: white; }
-        .logo { font-size: 20px; font-weight: bold; }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a { color: white; text-decoration: none; }
-        .detail-container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #eee; padding: 32px; }
+        .detail-container { 
+            max-width: 700px; 
+            margin: 40px auto; 
+            background: #fff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 8px #eee; 
+            padding: 32px; 
+        }
         .order-info { margin-bottom: 32px; }
         .concert-info { margin-top: 32px; padding-top: 32px; border-top: 1px solid #eee; }
         .info { margin: 16px 0; color: #333; }
-        .concert-link { color: #1976d2; cursor: pointer; text-decoration: underline; }
+        .concert-link { color: #3f51b5; cursor: pointer; text-decoration: underline; }
         #payBtn { 
             padding: 10px 20px; 
             background-color: #43a047; 
@@ -23,6 +28,7 @@
             font-size: 16px; 
             cursor: pointer; 
             transition: background-color 0.3s;
+            width: auto;
         }
         #payBtn:hover { 
             background-color: #2e7d32; 
@@ -37,6 +43,7 @@
             cursor: pointer; 
             transition: background-color 0.3s;
             margin-left: 10px;
+            width: auto;
         }
         #cancelBtn:hover { 
             background-color: #d32f2f; 
@@ -49,14 +56,14 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">演唱会票务系统</div>
+        <div class="logo"><i class="fas fa-ticket-alt"></i>演唱会票务系统</div>
         <div class="nav-links">
             <a href="index.html">首页</a>
             <a href="index.html">演唱会列表</a>
             <a href="orders.html">我的订单</a>
             <div class="user-section">
-                <a href="#" id="loginBtn">登录</a>
-                <a href="#" id="registerBtn">注册</a>
+                <a href="login.html" id="loginBtn">登录</a>
+                <a href="register.html" id="registerBtn">注册</a>
                 <a href="#" id="logoutBtn" style="display: none;">退出</a>
             </div>
         </div>
@@ -73,6 +80,38 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
+        // 页面加载完成后检查登录状态并初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户登录状态并更新界面
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (auth.isAuthenticated()) {
+                loginBtn.style.display = 'none';
+                registerBtn.style.display = 'none';
+                logoutBtn.style.display = 'block';
+                
+                // 已登录，加载订单详情
+                loadOrderDetail();
+            } else {
+                loginBtn.style.display = 'block';
+                registerBtn.style.display = 'block';
+                logoutBtn.style.display = 'none';
+                
+                // 未登录，显示提示信息
+                document.getElementById('orderInfo').innerHTML = 
+                    '<div style="text-align: center; padding: 20px;">请先登录查看订单详情</div>';
+            }
+            
+            // 登出功能
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                auth.logout();
+                window.location.href = 'index.html';
+            });
+        });
+        
         async function loadOrderDetail() {
             const params = new URLSearchParams(window.location.search);
             const orderId = params.get('order_id');
@@ -197,23 +236,18 @@
                 orderInfoDiv.innerHTML = '加载失败';
             }
         }
-        function viewConcert(concertId) {
-            window.location.href = `concert_detail.html?concert_id=${concertId}`;
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-            auth.init();
-            loadOrderDetail();
-        });
-
-        // 获取订单状态文本
+        
         function getOrderStatusText(status) {
-            switch (status) {
-                case 1: return "未支付";
-                case 2: return "已支付";
-                case 3: return "已过期";
-                case 4: return "已取消";
-                default: return "未知状态";
+            switch(status) {
+                case 0: return '已取消';
+                case 1: return '待支付';
+                case 2: return '已支付';
+                default: return '未知状态';
             }
+        }
+        
+        function viewConcert(concertId) {
+            window.location.href = `concert_detail.html?id=${concertId}`;
         }
     </script>
 </body>

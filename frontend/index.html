@@ -6,6 +6,7 @@
     <title>演唱会票务系统</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
     <style>
         :root {
             --primary-color: #3f51b5;
@@ -158,6 +159,7 @@
             border-radius: 0 50px 50px 0;
             cursor: pointer;
             transition: background 0.3s ease;
+            width: auto;
         }
         
         .search-bar button:hover {
@@ -433,18 +435,15 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">
-            <i class="fas fa-ticket-alt"></i>
-            演唱会票务系统
-        </div>
+        <div class="logo"><i class="fas fa-ticket-alt"></i>演唱会票务系统</div>
         <div class="nav-links">
-            <a href="index.html"><i class="fas fa-home"></i> 首页</a>
-            <a href="index.html"><i class="fas fa-list"></i> 演唱会列表</a>
-            <a href="orders.html"><i class="fas fa-shopping-cart"></i> 我的订单</a>
+            <a href="index.html">首页</a>
+            <a href="index.html">演唱会列表</a>
+            <a href="orders.html">我的订单</a>
             <div class="user-section">
-                <a href="#" id="loginBtn"><i class="fas fa-sign-in-alt"></i> 登录</a>
-                <a href="#" id="registerBtn"><i class="fas fa-user-plus"></i> 注册</a>
-                <a href="#" id="logoutBtn" style="display: none;"><i class="fas fa-sign-out-alt"></i> 退出</a>
+                <a href="login.html" id="loginBtn">登录</a>
+                <a href="register.html" id="registerBtn">注册</a>
+                <a href="#" id="logoutBtn" style="display: none;">退出</a>
             </div>
         </div>
     </nav>
@@ -454,8 +453,12 @@
         <main>
             <!-- 英雄区域 -->
             <div class="hero-section">
-                <h1>探索精彩演唱会，预定难忘体验</h1>
-                <p>浏览最新的演唱会信息，在线选座购票，尽享音乐盛宴</p>
+                <h1>探索精彩演唱会</h1>
+                <p>发现您喜爱的艺术家的现场表演，体验难忘的音乐之旅。立即预订您的门票！</p>
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索演唱会、艺术家或场馆...">
+                    <button><i class="fas fa-search"></i> 搜索</button>
+                </div>
             </div>
             
             <!-- 登录表单 -->
@@ -492,8 +495,10 @@
 
             <!-- 演唱会列表 -->
             <div class="concert-list" id="concertList">
-                <h2>热门演唱会</h2>
-                <div class="concerts-grid" id="concertsGrid"></div>
+                <h2>即将开始的演唱会</h2>
+                <div class="concerts-grid" id="concertsGrid">
+                    <div class="loading">正在加载演唱会列表...</div>
+                </div>
             </div>
         </main>
     </div>
@@ -503,15 +508,102 @@
     <script src="js/concert.js"></script>
     <script src="js/main.js"></script>
     <script>
-        // 滚动效果
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户登录状态并更新界面
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (auth.isAuthenticated()) {
+                loginBtn.style.display = 'none';
+                registerBtn.style.display = 'none';
+                logoutBtn.style.display = 'block';
             } else {
-                navbar.classList.remove('scrolled');
+                loginBtn.style.display = 'block';
+                registerBtn.style.display = 'block';
+                logoutBtn.style.display = 'none';
             }
+            
+            // 登出功能
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                auth.logout();
+                window.location.reload();
+            });
+            
+            // 加载演唱会列表
+            loadConcerts();
         });
+        
+        async function loadConcerts() {
+            const concertListEl = document.getElementById('concertsGrid');
+            try {
+                const response = await concertAPI.getConcertList();
+                
+                if (response.code === 1000 && response.data) {
+                    concertListEl.innerHTML = '';
+                    
+                    if (response.data.length === 0) {
+                        concertListEl.innerHTML = '<div class="no-data">暂无演唱会信息</div>';
+                        return;
+                    }
+                    
+                    response.data.forEach(concert => {
+                        // 处理状态显示
+                        let statusClass = '';
+                        let statusText = '';
+                        
+                        switch(concert.status) {
+                            case 0:
+                                statusClass = 'status-coming';
+                                statusText = '即将开始';
+                                break;
+                            case 1:
+                                statusClass = 'status-active';
+                                statusText = '售票中';
+                                break;
+                            case 2:
+                                statusClass = 'status-sold';
+                                statusText = '已售罄';
+                                break;
+                            default:
+                                statusClass = 'status-coming';
+                                statusText = '未知状态';
+                        }
+                        
+                        // 格式化日期时间
+                        const concertDate = new Date(concert.time);
+                        const formattedDate = concertDate.toLocaleDateString('zh-CN');
+                        const formattedTime = concertDate.toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'});
+                        
+                        // 创建演唱会卡片
+                        const concertCard = document.createElement('div');
+                        concertCard.className = 'concert-card';
+                        concertCard.innerHTML = `
+                            <div class="concert-image" style="background-image: url('${concert.image || 'https://via.placeholder.com/300x180?text=演唱会'}');"></div>
+                            <div class="concert-content">
+                                <h3 class="concert-title">${concert.name}</h3>
+                                <p class="concert-info">
+                                    <i class="fas fa-user"></i> ${concert.artist}<br>
+                                    <i class="fas fa-map-marker-alt"></i> ${concert.venue}<br>
+                                    <i class="fas fa-calendar-alt"></i> ${formattedDate} ${formattedTime}
+                                </p>
+                                <div class="concert-price">¥${concert.price}</div>
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                                <a href="concert_detail.html?id=${concert.id}" class="btn-view">查看详情</a>
+                            </div>
+                        `;
+                        
+                        concertListEl.appendChild(concertCard);
+                    });
+                } else {
+                    concertListEl.innerHTML = '<div class="error">加载演唱会列表失败</div>';
+                }
+            } catch (error) {
+                console.error('获取演唱会列表错误:', error);
+                concertListEl.innerHTML = '<div class="error">加载演唱会列表失败</div>';
+            }
+        }
     </script>
 </body>
 </html> 
