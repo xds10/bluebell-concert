@@ -599,6 +599,4 @@ function escapeHtml(text) {
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 打开Pull Request
 
-## 许可证
 
-MIT
