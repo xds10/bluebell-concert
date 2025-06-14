@@ -347,16 +347,41 @@
             try {
                 // 发送购票请求
                 const response = await concertAPI.buyTicket(concertId, section);
+                console.log('购票API响应:', response); // 添加调试日志
+                
                 if (response.code === 1000) {
-                    // 获取座位ID
+                    // 添加更详细的调试信息
+                    console.log('购票成功,返回数据:', JSON.stringify(response.data));
+                    
+                    // 获取座位ID - 兼容多种可能的返回结构
+                    let seatId = null;
+                    
                     if (response.data && response.data.seat_idx && response.data.seat_idx.seat_id) {
-                        const seatId = response.data.seat_idx.seat_id;
+                        seatId = response.data.seat_idx.seat_id;
+                    } else if (response.data && response.data.seat_idx && response.data.seat_idx.SeatID) {
+                        seatId = response.data.seat_idx.SeatID;
+                    } else if (response.data && response.data.SeatIdx && response.data.SeatIdx.SeatID) {
+                        seatId = response.data.SeatIdx.SeatID;
+                    } else if (response.data && response.data.seat_idx) {
+                        seatId = response.data.seat_idx.id || response.data.seat_idx.ID;
+                    } else if (response.data && response.data.SeatIdx) {
+                        seatId = response.data.SeatIdx.id || response.data.SeatIdx.ID;
+                    } else if (response.data) {
+                        // 直接在返回数据中查找可能的座位ID
+                        seatId = response.data.seat_id || response.data.seatID || response.data.SeatID;
+                    }
+                    
+                    console.log('解析到的座位ID:', seatId);
+                    
+                    if (seatId) {
                         // 显示处理中状态
                         alert('购票请求已提交，正在处理中...');
                         // 等待订单生成
                         await pollOrderStatus(concertId, seatId);
                     } else {
-                        alert('购票成功，但无法获取座位信息');
+                        console.error('无法获取座位ID，原始返回:', response.data);
+                        alert('购票成功，但无法获取座位信息。请在"我的订单"中查看');
+                        window.location.href = 'orders.html';
                     }
                 } else {
                     alert('选座失败：' + (response.msg || '未知错误'));

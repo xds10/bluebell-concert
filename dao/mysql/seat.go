@@ -58,3 +58,11 @@ func BuyTicketTx(tx *sqlx.Tx, p *models.Ticket) error {
 	_, err := tx.Exec(sqlStr, p.ConcertID, p.SeatIdx.SeatID)
 	return err
 }
+
+// GetSeatSectionBySeatID 获取座位的区域信息
+func GetSeatSectionBySeatID(seatID int64) (string, error) {
+	sqlStr := `select section from seat where id = ?`
+	var section string
+	err := db.Get(&section, sqlStr, seatID)
+	return section, err
+}

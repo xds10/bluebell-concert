@@ -35,6 +35,7 @@ func Setup(mode string) *gin.Engine {
 	v1.GET("/concert-list", controller.GetConcertListHandler)
 	v1.GET("/concert/:id", controller.GetConcertDetailHandler)
 	v1.GET("/concert/:id/seats", controller.GetConcertSeatsHandler)
+	// v1.GET("/concert/:id/seats/redis", controller.GetConcertSeatsRedisHandler)
 
 	v1.Use(middlewares.JWTAuthMiddleware()) // 认证中间件
 	{
@@ -45,6 +46,7 @@ func Setup(mode string) *gin.Engine {
 		v1.POST("/order/:id", controller.GetOrderDetailHandler)
 		v1.POST("/cancel-order", controller.CancelOrderHandler)
 		v1.POST("/ticket-order", controller.GetOrderByTicketInfoHandler)
+		// v1.POST("/concert/:id/seats/init", controller.InitConcertSeatsRedisHandler)
 	}
 
 	v1.GET("/ping", middlewares.JWTAuthMiddleware(), func(c *gin.Context) {

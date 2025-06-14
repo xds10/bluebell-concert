@@ -32,7 +32,7 @@ func BuyTicketHandler(c *gin.Context) {
 	fmt.Println(p)
 
 	// 2. 业务处理
-	seatNo, err := logic.BuyTicket(p)
+	result, err := logic.BuyTicket(p)
 	if err != nil {
 		zap.L().Error("logic.BuyTicket failed", zap.Error(err))
 		if errors.Is(err, mysql.ErrorUserExist) {
@@ -42,8 +42,12 @@ func BuyTicketHandler(c *gin.Context) {
 		ResponseError(c, CodeServerBusy)
 		return
 	}
+	
+	// 添加调试日志
+	zap.L().Info("购票成功，返回前端数据", zap.Any("response_data", result))
+	
 	// 3. 返回响应
-	ResponseSuccess(c, seatNo)
+	ResponseSuccess(c, result)
 }
 
 func PayOrderHandler(c *gin.Context) {

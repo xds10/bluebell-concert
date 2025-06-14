@@ -4,7 +4,7 @@ local request_body = [[
     "concert_id": 13,
     "user_id": 652676240481718272,
     "seat_idx": {
-        "section": "A区"
+        "section": "B区"
     }
 }
 ]]

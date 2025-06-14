@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"bluebell/dao/mysql"
+	"bluebell/dao/redis"
 
 	"go.uber.org/zap"
 )
@@ -31,6 +32,25 @@ func CancelOrder(orderID int64) error {
 	if err != nil {
 		zap.L().Error("mysql.ReleaseSeat failed", zap.Error(err))
 		// 即使释放座位失败，也不影响订单取消
+	}
+
+	// 获取座位区域信息
+	section, err := mysql.GetSeatSectionBySeatID(order.SeatID)
+	if err != nil {
+		zap.L().Error("mysql.GetSeatSectionBySeatID failed", zap.Error(err))
+		// 继续处理，不影响订单取消
+	} else {
+		// 将座位放回Redis集合
+		err = redis.ReturnSeatToConcert(order.ConcertID, order.SeatID, section)
+		if err != nil {
+			zap.L().Error("redis.ReturnSeatToConcert failed", zap.Error(err))
+			// 继续处理，不影响订单取消
+		} else {
+			zap.L().Info("座位已成功放回Redis集合",
+				zap.Int64("concert_id", order.ConcertID),
+				zap.Int64("seat_id", order.SeatID),
+				zap.String("section", section))
+		}
 	}
 
 	return nil
@@ -64,6 +84,28 @@ func CheckExpiredOrders() {
 				zap.Int64("seat_id", order.SeatID),
 				zap.Error(err))
 			// 即使释放座位失败，也不影响订单过期
+		}
+
+		// 获取座位区域信息
+		section, err := mysql.GetSeatSectionBySeatID(order.SeatID)
+		if err != nil {
+			zap.L().Error("mysql.GetSeatSectionBySeatID failed", 
+				zap.Int64("seat_id", order.SeatID),
+				zap.Error(err))
+		} else {
+			// 将座位放回Redis集合
+			err = redis.ReturnSeatToConcert(order.ConcertID, order.SeatID, section)
+			if err != nil {
+				zap.L().Error("redis.ReturnSeatToConcert failed", 
+					zap.Int64("concert_id", order.ConcertID),
+					zap.Int64("seat_id", order.SeatID),
+					zap.Error(err))
+			} else {
+				zap.L().Info("过期订单座位已成功放回Redis集合",
+					zap.Int64("concert_id", order.ConcertID),
+					zap.Int64("seat_id", order.SeatID),
+					zap.String("section", section))
+			}
 		}
 
 		zap.L().Info("Order expired automatically",

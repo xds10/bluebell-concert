@@ -2,8 +2,8 @@ package logic
 
 import (
 	"fmt"
-	"time"
 	"sync"
+	"time"
 
 	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
@@ -36,7 +36,19 @@ func SetOrderIDBySeat(concertID, seatID, orderID int64) {
 	pendingOrders[key] = orderID
 }
 
-func BuyTicket(p *models.Ticket) (*models.Ticket, error) {
+// 将这些类型定义移到函数外部，方便其他函数使用
+type SeatInfo struct {
+	ID      int64  `json:"seat_id"` // 使用小写命名以匹配前端期望
+	Section string `json:"section"`
+}
+
+type TicketResponse struct {
+	ConcertID int64    `json:"concert_id"`
+	UserID    int64    `json:"user_id"`
+	SeatIdx   SeatInfo `json:"seat_idx"`
+}
+
+func BuyTicket(p *models.Ticket) (*TicketResponse, error) {
 	// 1. 从Redis获取座位
 	seatID, err := redis.GetSeatByConcertID(p)
 	if seatID == 0 {
@@ -44,21 +56,25 @@ func BuyTicket(p *models.Ticket) (*models.Ticket, error) {
 		return nil, fmt.Errorf("获取座位失败: %w", err)
 	}
 	zap.L().Info("获取到座位", zap.Int64("座位ID", seatID))
-	
+
 	if p.SeatIdx == nil {
 		p.SeatIdx = &models.Seat{}
 	}
 	p.SeatIdx.SeatID = seatID
-	
-	// 准备返回值 - 只包含座位信息
-	result := &models.Ticket{
+
+	// 准备返回值 - 确保与前端期望的结构一致
+	result := &TicketResponse{
 		ConcertID: p.ConcertID,
 		UserID:    p.UserID,
-		SeatIdx: &models.Seat{
-			SeatID: seatID,
+		SeatIdx: SeatInfo{
+			ID:      seatID,
+			Section: p.SeatIdx.SeatSection,
 		},
 	}
-	
+
+	// 添加日志记录返回的结构
+	zap.L().Info("购票返回数据", zap.Any("result", result))
+
 	// 2. 异步处理数据库操作
 	go func() {
 		// 开始数据库事务
@@ -67,10 +83,10 @@ func BuyTicket(p *models.Ticket) (*models.Ticket, error) {
 			zap.L().Error("begin transaction failed", zap.Error(err))
 			return
 		}
-		
+
 		// 声明事务结果变量
 		var txErr error
-		
+
 		// 使用defer处理事务提交或回滚
 		defer func() {
 			if p := recover(); p != nil {
@@ -83,20 +99,20 @@ func BuyTicket(p *models.Ticket) (*models.Ticket, error) {
 				zap.L().Error("购票事务失败", zap.Error(txErr))
 			}
 		}()
-		
+
 		// 3. 在事务中执行购票操作
 		if txErr = mysql.BuyTicketTx(tx, p); txErr != nil {
 			zap.L().Error("mysql.BuyTicket failed", zap.Error(txErr))
 			return
 		}
-		
+
 		// 4. 在事务中查询完整的seat表
 		p.SeatIdx, txErr = mysql.GetSeatByIDTx(tx, seatID)
 		if txErr != nil {
 			zap.L().Error("mysql.GetSeatByID failed", zap.Error(txErr))
 			return
 		}
-		
+
 		// 5. 在事务中创建订单
 		order := &models.Order{
 			UserID:     p.UserID,
@@ -106,27 +122,27 @@ func BuyTicket(p *models.Ticket) (*models.Ticket, error) {
 			Status:     1,
 			CreateTime: time.Now(),
 		}
-		
+
 		txErr = mysql.AddOrderTx(tx, order)
 		if txErr != nil {
 			zap.L().Error("mysql.AddOrders failed", zap.Error(txErr))
 			return
 		}
-		
+
 		// 提交事务
 		if txErr = tx.Commit(); txErr != nil {
 			zap.L().Error("commit transaction failed", zap.Error(txErr))
 			return
 		}
-		
+
 		// 成功完成事务后，将订单ID存入映射表
 		SetOrderIDBySeat(p.ConcertID, seatID, order.ID)
-		zap.L().Info("异步创建订单成功", 
-			zap.Int64("concertID", p.ConcertID), 
+		zap.L().Info("异步创建订单成功",
+			zap.Int64("concertID", p.ConcertID),
 			zap.Int64("seatID", seatID),
 			zap.Int64("orderID", order.ID))
 	}()
-	
+
 	return result, nil
 }
 
@@ -136,18 +152,18 @@ func GetOrderByTicketInfo(concertID, seatID int64) (*models.Order, error) {
 	if orderID, exists := GetOrderIDBySeat(concertID, seatID); exists {
 		return mysql.GetOrderById(orderID)
 	}
-	
+
 	// 如果内存中没有，查询数据库
 	order, err := mysql.GetOrderBySeat(concertID, seatID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 将查询到的订单ID缓存到内存
 	if order != nil {
 		SetOrderIDBySeat(concertID, seatID, order.ID)
 	}
-	
+
 	return order, nil
 }
 
