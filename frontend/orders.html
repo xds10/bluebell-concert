@@ -92,7 +92,26 @@
     <div class="orders-container">
         <h2>我的订单</h2>
         <div class="search-container">
-            <input type="text" id="orderSearchInput" placeholder="搜索订单号或演唱会名称..." class="search-input">
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="orderSearchInput" placeholder="搜索订单号、演唱会名称、座位信息..." class="search-input">
+                <select id="orderStatusFilter" style="min-width: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+                    <option value="all">所有状态</option>
+                    <option value="1">未支付</option>
+                    <option value="2">已支付</option>
+                    <option value="3">已过期</option>
+                    <option value="4">已取消</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <select id="orderSeatFilter" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+                    <option value="all">所有座位区域</option>
+                    <option value="VIP区">VIP区</option>
+                    <option value="A区">A区</option>
+                    <option value="B区">B区</option>
+                    <option value="C区">C区</option>
+                </select>
+                <button id="resetFilters" style="padding: 10px 20px; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">重置筛选</button>
+            </div>
         </div>
         <div id="ordersList">加载中...</div>
         <div id="pagination" class="pagination"></div>
@@ -135,8 +154,60 @@
                         return new Date(b.create_time) - new Date(a.create_time);
                     });
                     
-                    // 初始化过滤后的订单列表
+                    console.log('收到原始订单数据:', allOrders);
+                    
+                    // 预先获取所有订单的演唱会和座位信息
+                    const detailedOrdersPromises = allOrders.map(async (order) => {
+                        try {
+                            // 获取演唱会信息
+                            if (order.concert_id && !order.concert_title) {
+                                const concertResponse = await concertAPI.getDetail(order.concert_id);
+                                if (concertResponse.code === 1000 && concertResponse.data) {
+                                    order.concert_title = concertResponse.data.title;
+                                    console.log(`获取到演唱会 ${order.concert_id} 标题: ${order.concert_title}`);
+                                }
+                            }
+                            
+                            // 获取座位详情
+                            if (!order.seat_section && !order.ticket) {
+                                const orderDetailResponse = await orderAPI.getOrderDetail(order.id);
+                                if (orderDetailResponse.code === 1000 && orderDetailResponse.data) {
+                                    if (orderDetailResponse.data.ticket && orderDetailResponse.data.ticket.seat_idx) {
+                                        order.ticket = orderDetailResponse.data.ticket;
+                                        
+                                        // 保存座位区域信息用于过滤
+                                        if (order.ticket.seat_idx.section) {
+                                            order.seat_section = order.ticket.seat_idx.section;
+                                            console.log(`获取到订单 ${order.id} 座位区域: ${order.seat_section}`);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            return order;
+                        } catch (error) {
+                            console.error(`处理订单详情失败，ID: ${order.id}`, error);
+                            return order;
+                        }
+                    });
+                    
+                    try {
+                        // 等待所有详情获取完毕
+                        allOrders = await Promise.all(detailedOrdersPromises);
+                        console.log('处理后的订单数据:', allOrders);
+                    } catch (error) {
+                        console.error('获取订单详情时出错:', error);
+                    }
+                    
+                    // 初始化过滤后的订单列表并添加基本处理
                     filteredOrders = [...allOrders];
+                    
+                    // 初次加载时也执行一次过滤，确保UI显示正确的状态
+                    const statusFilter = document.getElementById('orderStatusFilter');
+                    const seatFilter = document.getElementById('orderSeatFilter');
+                    if (statusFilter && statusFilter.value !== 'all' || seatFilter && seatFilter.value !== 'all') {
+                        await filterOrders();
+                    }
                     
                     // 显示当前页的订单
                     await displayOrdersPage(currentPage);
@@ -156,33 +227,115 @@
             }
         }
         
+        // 全局定义过滤函数，以便其他地方也能调用
+        let filterOrders;
+        
         function initSearch() {
             const searchInput = document.getElementById('orderSearchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', async () => {
-                    const searchTerm = searchInput.value.trim().toLowerCase();
-                    
-                    // 过滤订单
-                    filteredOrders = allOrders.filter(order => {
+            const statusFilter = document.getElementById('orderStatusFilter');
+            const seatFilter = document.getElementById('orderSeatFilter');
+            const resetFiltersBtn = document.getElementById('resetFilters');
+            
+            // 搜索和筛选函数
+            filterOrders = async () => {
+                const searchTerm = searchInput.value.trim().toLowerCase();
+                const statusValue = statusFilter.value;
+                const seatValue = seatFilter.value;
+                
+                console.log('开始过滤，搜索词:', searchTerm, '状态:', statusValue, '座位区域:', seatValue);
+                
+                // 过滤订单
+                filteredOrders = allOrders.filter(order => {
+                    // 匹配搜索词
+                    let matchesSearch = true;
+                    if (searchTerm) {
+                        matchesSearch = false;
+                        
                         // 搜索订单号
                         if (order.id && order.id.toString().includes(searchTerm)) {
-                            return true;
+                            matchesSearch = true;
                         }
                         
-                        // 搜索演唱会名称
-                        if (order.concert_title && order.concert_title.toLowerCase().includes(searchTerm)) {
-                            return true;
+                        // 搜索演唱会名称 - 添加更多健壮性检查
+                        else if (
+                            (order.concert_title && order.concert_title.toLowerCase().includes(searchTerm)) || 
+                            (order.concert && order.concert.title && order.concert.title.toLowerCase().includes(searchTerm))
+                        ) {
+                            matchesSearch = true;
+                            console.log(`订单 ${order.id} 的演唱会名称匹配搜索词 "${searchTerm}"`);
                         }
                         
-                        return false;
-                    });
+                        // 搜索座位信息 - 从order对象中获取，更健壮的处理
+                        else if (order.ticket && order.ticket.seat_idx) {
+                            const seat = order.ticket.seat_idx;
+                            const seatInfo = [
+                                seat.section || '', 
+                                seat.seat_row ? `${seat.seat_row}排` : '',
+                                seat.seat_no ? `${seat.seat_no}号` : ''
+                            ].join(' ').toLowerCase();
+                            
+                            if (seatInfo.includes(searchTerm)) {
+                                matchesSearch = true;
+                                console.log(`订单 ${order.id} 的座位信息 "${seatInfo}" 匹配搜索词 "${searchTerm}"`);
+                            }
+                        }
+                        
+                        // 如果没有座位信息但有座位区域字段
+                        else if (order.seat_section && order.seat_section.toLowerCase().includes(searchTerm)) {
+                            matchesSearch = true;
+                            console.log(`订单 ${order.id} 的座位区域 "${order.seat_section}" 匹配搜索词 "${searchTerm}"`);
+                        }
+                    }
                     
-                    // 重置到第一页
-                    currentPage = 1;
+                    // 匹配状态
+                    let matchesStatus = true;
+                    if (statusValue !== 'all') {
+                        matchesStatus = order.status == parseInt(statusValue);
+                    }
                     
-                    // 更新显示
-                    await displayOrdersPage(currentPage);
-                    setupPagination();
+                    // 匹配座位区域
+                    let matchesSeat = true;
+                    if (seatValue !== 'all') {
+                        const sectionMatches = (order.ticket && order.ticket.seat_idx && 
+                            order.ticket.seat_idx.section === seatValue) ||
+                            (order.seat_section === seatValue);
+                        
+                        matchesSeat = sectionMatches;
+                    }
+                    
+                    return matchesSearch && matchesStatus && matchesSeat;
+                });
+                
+                // 重置到第一页
+                currentPage = 1;
+                
+                // 更新显示
+                await displayOrdersPage(currentPage);
+                setupPagination();
+            };
+            
+            // 事件监听
+            if (searchInput) {
+                searchInput.addEventListener('input', filterOrders);
+            }
+            
+            if (statusFilter) {
+                statusFilter.addEventListener('change', filterOrders);
+            }
+            
+            if (seatFilter) {
+                seatFilter.addEventListener('change', filterOrders);
+            }
+            
+            if (resetFiltersBtn) {
+                resetFiltersBtn.addEventListener('click', () => {
+                    // 重置所有过滤条件
+                    searchInput.value = '';
+                    statusFilter.value = 'all';
+                    seatFilter.value = 'all';
+                    
+                    // 重新应用过滤（会显示所有订单）
+                    filterOrders();
                 });
             }
         }
@@ -200,6 +353,48 @@
             const startIndex = (page - 1) * ordersPerPage;
             const endIndex = Math.min(startIndex + ordersPerPage, filteredOrders.length);
             const currentPageOrders = filteredOrders.slice(startIndex, endIndex);
+            
+            // 收集所有座位区域信息，用于更新过滤选项
+            if (allOrders.length > 0 && !window.seatSectionsPopulated) {
+                const seatFilter = document.getElementById('orderSeatFilter');
+                const seatSections = new Set();
+                
+                // 默认添加基础选项
+                seatSections.add('VIP区');
+                seatSections.add('A区');
+                seatSections.add('B区');
+                seatSections.add('C区');
+                
+                // 从订单数据中添加
+                allOrders.forEach(order => {
+                    // 从订单座位信息中获取区域
+                    if (order.ticket && order.ticket.seat_idx && order.ticket.seat_idx.section) {
+                        seatSections.add(order.ticket.seat_idx.section);
+                    }
+                    // 从订单的seat_section字段获取
+                    if (order.seat_section) {
+                        seatSections.add(order.seat_section);
+                    }
+                });
+                
+                // 重新生成下拉选项
+                if (seatFilter) {
+                    // 保留第一个"所有座位区域"选项
+                    const firstOption = seatFilter.options[0];
+                    seatFilter.innerHTML = '';
+                    seatFilter.appendChild(firstOption);
+                    
+                    // 添加所有收集到的区域
+                    [...seatSections].sort().forEach(section => {
+                        const option = document.createElement('option');
+                        option.value = section;
+                        option.textContent = section;
+                        seatFilter.appendChild(option);
+                    });
+                }
+                
+                window.seatSectionsPopulated = true;
+            }
             
             // 创建一个映射来存储演唱会ID和标题
             const concertTitles = {};
@@ -257,8 +452,17 @@
                     })();
                 }
                 
-                // 获取演唱会标题
-                const concertTitle = order.concert_id ? (concertTitles[order.concert_id] || '加载中...') : '未知';
+                // 获取演唱会标题，优先使用已经获取好的信息
+                let concertTitle = '未知';
+                if (order.concert_title) {
+                    concertTitle = order.concert_title;
+                } else if (order.concert && order.concert.title) {
+                    concertTitle = order.concert.title;
+                } else if (order.concert_id && concertTitles[order.concert_id]) {
+                    concertTitle = concertTitles[order.concert_id];
+                } else if (order.concert_id) {
+                    concertTitle = '加载中...';
+                }
                 
                 const orderDiv = document.createElement('div');
                 orderDiv.className = 'order-item';
