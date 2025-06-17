@@ -41,12 +41,27 @@ const auth = {
         }
     },
 
-    async register(username, password) {
+
+
+    async register(username, password, rePassword) {
         try {
-            await authAPI.register(username, password);
-            return await this.login(username, password);
+            console.log('开始注册，用户名:', username);
+            
+            // 调用注册API，传递用户名、密码和重复密码
+            const response = await authAPI.register(username, password, rePassword);
+            console.log('注册响应:', response);
+            
+            if (response.code === 1000) {
+                console.log('注册成功，准备自动登录');
+                return await this.login(username, password);
+            } else {
+                // 注册失败，返回错误信息
+                console.error('注册失败，错误码:', response.code, '消息:', response.msg);
+                alert('注册失败: ' + (response.msg || '未知错误'));
+                return false;
+            }
         } catch (error) {
-            console.error('Registration failed:', error);
+            console.error('注册过程中出错:', error);
             return false;
         }
     },
@@ -123,22 +138,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // 登录按钮点击
     if (loginBtn) {
         loginBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            if (loginForm) loginForm.style.display = 'block';
-            if (registerForm) registerForm.style.display = 'none';
+            // 不阻止默认行为，允许链接跳转到login.html
+            // 但需要判断是否在主页，如果在主页才跳转，否则直接显示嵌入式表单
+            if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')) {
+                // 允许跳转，不做任何处理
+            } else {
+                // 在其他页面保持原有逻辑，显示嵌入式表单
+                e.preventDefault();
+                const loginForm = document.getElementById('loginForm');
+                const registerForm = document.getElementById('registerForm');
+                if (loginForm) loginForm.style.display = 'block';
+                if (registerForm) registerForm.style.display = 'none';
+            }
         });
     }
 
     // 注册按钮点击
     if (registerBtn) {
         registerBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            if (registerForm) registerForm.style.display = 'block';
-            if (loginForm) loginForm.style.display = 'none';
+            // 不阻止默认行为，允许链接跳转到register.html
+            // 但需要判断是否在主页，如果在主页才跳转，否则直接显示嵌入式表单
+            if (window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')) {
+                // 允许跳转，不做任何处理
+            } else {
+                // 在其他页面保持原有逻辑，显示嵌入式表单
+                e.preventDefault();
+                const loginForm = document.getElementById('loginForm');
+                const registerForm = document.getElementById('registerForm');
+                if (registerForm) registerForm.style.display = 'block';
+                if (loginForm) loginForm.style.display = 'none';
+            }
         });
     }
 

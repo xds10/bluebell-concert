@@ -39,10 +39,19 @@ const authAPI = {
         });
     },
 
-    register: async (username, password) => {
+    register: async (username, password, rePassword) => {
+        console.log('发送注册请求，用户名:', username);
+        
+        // 构建请求体，符合API规范
+        const requestData = {
+            username: username,
+            password: password,
+            re_password: rePassword
+        };
+        
         return apiRequest('/signup', {
             method: 'POST',
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify(requestData)
         });
     }
 };

@@ -74,10 +74,7 @@
                 <input type="password" class="form-control" id="registerPassword" placeholder="密码" required />
             </div>
             <div class="form-group">
-                <input type="password" class="form-control" id="confirmPassword" placeholder="确认密码" required />
-            </div>
-            <div class="form-group">
-                <input type="email" class="form-control" id="registerEmail" placeholder="电子邮箱" required />
+                <input type="password" class="form-control" id="rePassword" placeholder="请再次输入密码" required />
             </div>
             <button type="submit" class="btn">注册</button>
         </form>
@@ -90,22 +87,60 @@
     <script>
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const username = document.getElementById('registerUsername').value;
-            const password = document.getElementById('registerPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const email = document.getElementById('registerEmail').value;
             
-            // 验证密码一致
-            if (password !== confirmPassword) {
+            // 获取输入值
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const rePassword = document.getElementById('rePassword').value;
+            
+            // 基本输入验证
+            if (!username) {
+                alert('请输入用户名');
+                return;
+            }
+            
+            if (!password) {
+                alert('请输入密码');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('密码长度不能少于6个字符');
+                return;
+            }
+            
+            // 验证密码一致性
+            if (password !== rePassword) {
                 alert('两次输入的密码不一致');
                 return;
             }
             
-            if (await auth.register(username, password, email)) {
-                alert('注册成功，已自动登录');
-                window.location.href = 'index.html';
-            } else {
-                alert('注册失败，请稍后重试');
+            try {
+                // 显示加载状态
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '注册中...';
+                submitBtn.disabled = true;
+                
+                // 调用注册函数，传递重复密码作为第三个参数
+                const result = await auth.register(username, password, rePassword);
+                
+                if (result) {
+                    alert('注册成功，已自动登录');
+                    window.location.href = 'index.html';
+                }
+                
+                // 恢复按钮状态
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            } catch (error) {
+                console.error('注册过程中出错:', error);
+                alert('注册过程中出错，请稍后重试');
+                
+                // 恢复按钮状态
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                submitBtn.textContent = '注册';
+                submitBtn.disabled = false;
             }
         });
     </script>
