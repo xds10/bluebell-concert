@@ -397,24 +397,35 @@
         
         // 轮询订单状态
         async function pollOrderStatus(concertId, seatId) {
-            const maxAttempts = 10;
-            const delayMs = 500;
+            const maxAttempts = 30; // 增加尝试次数
+            const delayMs = 1000; // 增加每次轮询的间隔时间
             let attempts = 0;
+            
+            // 显示一个正在加载的提示
+            const seatMap = document.getElementById('seatMap');
+            const originalContent = seatMap.innerHTML;
+            seatMap.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i><p>订单处理中，请稍候...</p></div>';
             
             const checkOrder = async () => {
                 try {
+                    console.log(`第${attempts}次尝试获取订单状态`);
                     const response = await concertAPI.getOrderByTicketInfo(concertId, seatId);
+                    console.log('订单查询响应:', response);
                     
                     if (response.code === 1000 && response.data && response.data.id) {
                         // 订单已创建成功
+                        console.log('订单创建成功:', response.data);
                         localStorage.setItem('currentOrder', JSON.stringify(response.data));
                         window.location.href = `order_detail.html?order_id=${response.data.id}`;
                         return true;
-                    } else if (response.code === 1012) {
-                        // 订单仍在处理中
+                    } else if (response.code === 1012 || !response.data) {
+                        // 订单仍在处理中或暂无数据
+                        console.log('订单仍在处理中...');
                         return false;
                     } else {
                         // 出现其他错误
+                        console.error('获取订单信息失败:', response);
+                        seatMap.innerHTML = originalContent;
                         alert('获取订单信息失败: ' + (response.msg || '未知错误'));
                         return true; // 停止轮询
                     }
@@ -426,6 +437,8 @@
             
             const poll = async () => {
                 if (attempts >= maxAttempts) {
+                    console.log('订单处理超时');
+                    seatMap.innerHTML = originalContent;
                     alert('订单处理超时，请在"我的订单"中查看结果');
                     window.location.href = 'orders.html';
                     return;

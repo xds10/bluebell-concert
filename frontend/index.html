@@ -455,10 +455,6 @@
             <div class="hero-section">
                 <h1>探索精彩演唱会</h1>
                 <p>发现您喜爱的艺术家的现场表演，体验难忘的音乐之旅。立即预订您的门票！</p>
-                <div class="search-bar">
-                    <input type="text" placeholder="搜索演唱会、艺术家或场馆...">
-                    <button><i class="fas fa-search"></i> 搜索</button>
-                </div>
             </div>
             
             <!-- 登录表单 -->
@@ -514,7 +510,7 @@
             const registerBtn = document.getElementById('registerBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             
-            if (auth.isAuthenticated()) {
+            if (auth.isAuthenticated) {
                 loginBtn.style.display = 'none';
                 registerBtn.style.display = 'none';
                 logoutBtn.style.display = 'block';
