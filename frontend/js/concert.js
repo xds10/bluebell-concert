@@ -50,10 +50,16 @@ const concertManager = {
             // 判断售票状态
             const statusInfo = this.calculateStatus(concert);
             
+            // 获取演唱会图片URL
+            const imageUrl = concertAPI.getImage(concert.id);
+            
             const card = document.createElement('div');
             card.className = 'concert-card';
             card.innerHTML = `
                 <div class="concert-card-content">
+                    <div class="concert-image">
+                        <img src="${imageUrl}" alt="${concert.title}" onerror="this.src='https://via.placeholder.com/300x200?text=暂无图片'" />
+                    </div>
                     <h3>${concert.title}</h3>
                     <p>开始时间：${formatDate(concert.date)}</p>
                     <p>结束时间：${formatDate(concert.enddate)}</p>

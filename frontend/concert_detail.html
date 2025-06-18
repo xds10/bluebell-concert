@@ -84,6 +84,20 @@
         .availability-sold {
             color: #f44336;
         }
+        
+        /* 演唱会图片样式 */
+        .concert-image-container {
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .concert-detail-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -102,6 +116,9 @@
     </nav>
     <div class="detail-container">
         <h2>演唱会详情</h2>
+        <div class="concert-image-container" id="concertImageContainer">
+            <img id="concertImage" class="concert-detail-image" src="" alt="演唱会图片" onerror="this.src='https://via.placeholder.com/800x400?text=暂无图片'">
+        </div>
         <div class="concert-info" id="concertInfo">加载中...</div>
         <div id="seatAvailability" class="seat-availability">
             <h3>区域余票</h3>
@@ -235,6 +252,10 @@
                 if (resp.code === 1000 && resp.data) {
                     const c = resp.data;
                     console.log('演唱会数据:', c); // 调试输出
+                    
+                    // 加载演唱会图片
+                    const imageUrl = concertAPI.getImage(concertId);
+                    document.getElementById('concertImage').src = imageUrl;
                     
                     // 计算演唱会状态
                     const now = new Date();

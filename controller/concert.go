@@ -2,6 +2,8 @@ package controller
 
 import (
 	"errors"
+	"net/http"
+	"os"
 	"strconv"
 
 	"bluebell/dao/mysql"
@@ -95,4 +97,34 @@ func GetConcertSeatsHandler(c *gin.Context) {
 
 	// 3. 返回响应
 	ResponseSuccess(c, seatInfo)
+}
+
+// GetConcertImageHandler 获取演唱会图片
+func GetConcertImageHandler(c *gin.Context) {
+	// 1. 获取演唱会ID参数
+	idStr := c.Param("id")
+	_, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		zap.L().Error("get concert image with invalid concert id", zap.Error(err))
+		ResponseError(c, CodeInvalidParam)
+		return
+	}
+
+	// 2. 构建图片路径
+	imagePath := "./resources/concert-" + idStr + "-picture.jpg" // 默认jpg格式
+
+	// 3. 检查文件是否存在
+	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+		// 尝试png格式
+		imagePath = "./resources/concert-" + idStr + "-picture.png"
+		if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+			// 图片不存在，返回默认图片或404
+			zap.L().Error("concert image not found", zap.String("path", imagePath))
+			c.JSON(http.StatusNotFound, gin.H{"error": "图片不存在"})
+			return
+		}
+	}
+
+	// 4. 返回图片文件
+	c.File(imagePath)
 }

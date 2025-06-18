@@ -3,6 +3,7 @@ const auth = {
     isAuthenticated: false,
     token: null,
     user: null,
+    isAdmin: false,
 
     init() {
         const token = localStorage.getItem('token');
@@ -13,6 +14,15 @@ const auth = {
             if (!localStorage.getItem('loginResult')) {
                 localStorage.setItem('loginResult', JSON.stringify({ token: this.token }));
             }
+            
+            // 检查是否是管理员
+            const loginResult = JSON.parse(localStorage.getItem('loginResult') || '{}');
+            this.isAdmin = loginResult.user_name === 'admin';
+            this.user = {
+                user_id: loginResult.user_id,
+                user_name: loginResult.user_name
+            };
+            
             this.updateUI();
         }
     },
@@ -24,6 +34,12 @@ const auth = {
             if (response.code === 1000 && response.data && response.data.token) {
                 this.token = response.data.token;
                 this.isAuthenticated = true;
+                this.user = {
+                    user_id: response.data.user_id,
+                    user_name: response.data.user_name
+                };
+                this.isAdmin = response.data.user_name === 'admin';
+                
                 localStorage.setItem('token', this.token);
                 localStorage.setItem('loginResult', JSON.stringify({
                     token: this.token,
@@ -40,8 +56,6 @@ const auth = {
             return false;
         }
     },
-
-
 
     async register(username, password, rePassword) {
         try {
@@ -80,6 +94,7 @@ const auth = {
         const logoutBtn = document.getElementById('logoutBtn');
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
+        const addConcertBtn = document.getElementById('addConcertBtn');
 
         if (this.isAuthenticated) {
             if (loginBtn) loginBtn.style.display = 'none';
@@ -87,10 +102,28 @@ const auth = {
             if (logoutBtn) logoutBtn.style.display = 'inline';
             if (loginForm) loginForm.style.display = 'none';
             if (registerForm) registerForm.style.display = 'none';
+            
+            // 管理员特有的UI元素
+            if (addConcertBtn) {
+                addConcertBtn.style.display = this.isAdmin ? 'inline' : 'none';
+            }
+            
+            // 添加用户名显示
+            const userNameDisplay = document.getElementById('userNameDisplay');
+            if (userNameDisplay && this.user && this.user.user_name) {
+                userNameDisplay.textContent = this.user.user_name;
+                userNameDisplay.style.display = 'inline';
+            }
         } else {
             if (loginBtn) loginBtn.style.display = 'inline';
             if (registerBtn) registerBtn.style.display = 'inline';
             if (logoutBtn) logoutBtn.style.display = 'none';
+            if (addConcertBtn) addConcertBtn.style.display = 'none';
+            
+            const userNameDisplay = document.getElementById('userNameDisplay');
+            if (userNameDisplay) {
+                userNameDisplay.style.display = 'none';
+            }
         }
     }
 };

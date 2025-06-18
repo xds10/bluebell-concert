@@ -75,6 +75,11 @@ const concertAPI = {
         return apiRequest(`/concert/${id}/seats`);
     },
 
+    getImage: (id) => {
+        // 直接返回图片URL，不通过apiRequest
+        return `${API_BASE_URL}/concert/${id}/image`;
+    },
+
     create: async (concertData) => {
         return apiRequest('/create_concert', {
             method: 'POST',

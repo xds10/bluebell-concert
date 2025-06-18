@@ -35,6 +35,7 @@ func Setup(mode string) *gin.Engine {
 	v1.GET("/concert-list", controller.GetConcertListHandler)
 	v1.GET("/concert/:id", controller.GetConcertDetailHandler)
 	v1.GET("/concert/:id/seats", controller.GetConcertSeatsHandler)
+	v1.GET("/concert/:id/image", controller.GetConcertImageHandler)
 	// v1.GET("/concert/:id/seats/redis", controller.GetConcertSeatsRedisHandler)
 
 	v1.Use(middlewares.JWTAuthMiddleware()) // 认证中间件
